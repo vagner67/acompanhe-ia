@@ -12,3 +12,4 @@ coverage/
 
 # CI do GitHub não sobe com o PAT atual (escopo 'workflow' ausente) — reativar renovando o token
 .github/
+*.tsbuildinfo

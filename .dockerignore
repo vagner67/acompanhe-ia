@@ -17,3 +17,4 @@ docs
 tools
 ref
 servicetokens.json
+**/*.tsbuildinfo
