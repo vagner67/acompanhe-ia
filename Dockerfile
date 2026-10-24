@@ -24,7 +24,9 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # --- build (mesma ordem provada localmente) ---
-RUN cd packages/db && pnpm exec prisma generate && pnpm run build \
+# find: nenhum tsbuildinfo pode sobreviver (tsc -b confiaria no incremental e pularia emits)
+RUN find /app -name "tsconfig.tsbuildinfo" -delete \
+ && cd packages/db && pnpm exec prisma generate && pnpm run build \
  && pnpm --filter @acompanhe/shared build \
  && pnpm --filter @acompanhe/api build \
  && pnpm --filter @acompanhe/web build
