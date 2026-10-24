@@ -23,7 +23,7 @@ API_PID=$!
 node dist/worker.js &
 WORKER_PID=$!
 
-/opt/botvenv/bin/python /app/apps/bot/bot/main.py &
+cd /app/apps/bot && /opt/botvenv/bin/python -m bot.main &
 BOT_PID=$!
 
 echo "[start] api=$API_PID worker=$WORKER_PID bot=$BOT_PID — no ar (porta ${PORT:-3000})"
