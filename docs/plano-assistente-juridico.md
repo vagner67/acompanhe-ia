@@ -66,3 +66,12 @@ tests). `prisma db push` no boot do container já cobre o cloud.
 Geração de texto livre por LLM (exige `LLM_API_KEY` — inexistente; a engine grounded é o padrão
 anti-alucinação); parecer jurídico (ato privativo — Lei 8.906/994 art. 1º, RF-B08); alterar os
 fluxos de OAB/consulta humana (RF-B07 permanece como está).
+
+---
+
+## Status final (24/10/2026) — CONCLUÍDO ✓
+
+- `tsc` api/web/shared = 0; suíte completa **263 passed / 0 failed / 1 skipped** (assistente.test.ts 17/17 com fixture real de 94 movimentos).
+- Bugs corrigidos no ciclo: 10 regex de intenção com `\b` após stems (não casavam "resuma", "prazos", "movimentos"…) + coluna `alertasAtivos` em `acompanhe_test` + cenário do alerta (2ª sync sem movimentos novos).
+- Deploy: commit `5635f2d` → autoDeploy Render → **LIVE**.
+- Smoke E2E ao vivo (`tools/smoke-juridico-live.py`) **14/14 ✓**: paywall honesto 403 sem plano · buscar 200 com dados reais (DataJud ao vivo) + resumo humano + rodapé · perguntar → `intencao=status` grounded ("DESCONHECIDO" honesto quando não derivável) · alertar flag + idempotente · bundle JS contém a UI nova (Alertar/chat).
