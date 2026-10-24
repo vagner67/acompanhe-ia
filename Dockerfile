@@ -13,7 +13,7 @@ WORKDIR /app
 RUN corepack enable
 
 # --- camada de dependências (cache) ---
-COPY pnpm-lock.yaml package.json ./
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/db/package.json packages/db/
 COPY apps/api/package.json apps/api/
