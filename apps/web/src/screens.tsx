@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { XP } from "@acompanhe/shared";
-import { api, adminApi, type Gamificacao, type GastoDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type StatusAssinatura } from "./api2";
+import { api, adminApi, type Gamificacao, type GastoDto, type LegalEventDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type StatusAssinatura } from "./api2";
 
 type Api = ReturnType<typeof api>;
 interface P {
@@ -365,11 +365,32 @@ export function ConcursosScreen({ a, toast }: P) {
 }
 
 // ═══════════════════════ JURÍDICO ═══════════════════════
+type ChatMsg = { quem: "user" | "ia"; texto: string; fontes?: string[]; rodape?: string };
+
+const fmtDataBR = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+};
+const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const STATUS_CORES: Record<string, string> = {
+  ativo: "green",
+  suspenso: "amber",
+  arquivado: "red",
+  desconhecido: "",
+};
+
 export function JuridicoScreen({ a, toast }: P) {
   const [cnj, setCnj] = useState("");
   const [uf, setUf] = useState("MT");
-  const [processo, setProcesso] = useState<Record<string, unknown> | null>(null);
-  const [explicacao, setExplicacao] = useState("");
+  const [caso, setCaso] = useState<Record<string, unknown> | null>(null);
+  const [movimentos, setMovimentos] = useState<LegalEventDto[]>([]);
+  const [resumo, setResumo] = useState("");
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [pergunta, setPergunta] = useState("");
+  const [digitando, setDigitando] = useState(false);
+  const [alertasOn, setAlertasOn] = useState(false);
+  const [mostrarTecnico, setMostrarTecnico] = useState(false);
   const run = async (fn: () => Promise<unknown>) => {
     try {
       const r = await fn();
@@ -380,59 +401,274 @@ export function JuridicoScreen({ a, toast }: P) {
       return null;
     }
   };
+
+  const carregarCaso = (cnjAlvo: string) =>
+    a
+      .processo(cnjAlvo)
+      .then((p) => {
+        setCaso(p.processo);
+        setMovimentos(p.movimentos ?? []);
+        setResumo(p.resumo ?? "");
+        setAlertasOn(Boolean(p.processo?.alertasAtivos));
+      })
+      .catch(() => void 0);
+
+  const enviarPergunta = async (q: string) => {
+    const texto = q.trim();
+    if (!texto || !cnj.trim()) return;
+    setChat((c) => [...c, { quem: "user", texto }]);
+    setPergunta("");
+    setDigitando(true);
+    try {
+      const r = await a.processoPerguntar(cnj.trim(), texto);
+      setChat((c) => [...c, { quem: "ia", texto: r.resposta, fontes: r.fontes, rodape: r.rodape }]);
+    } catch (e) {
+      setChat((c) => [...c, { quem: "ia", texto: `Não consegui responder agora: ${(e as Error).message}` }]);
+    } finally {
+      setDigitando(false);
+    }
+  };
+
+  const acoes = [
+    {
+      rotulo: "🔎 Buscar",
+      cls: "btn",
+      titulo: "Ver o processo sem registrar",
+      fn: async () => {
+        const r = (await run(() => a.processoBuscar(cnj.trim(), uf))) as Awaited<ReturnType<typeof a.processoBuscar>> | null;
+        if (r?.processo) {
+          setCaso(r.processo);
+          setMovimentos(r.movimentos ?? []);
+          setResumo(r.resumo ?? "");
+          setAlertasOn(false);
+          setChat([]);
+        }
+      },
+    },
+    {
+      rotulo: "⚖️ Acompanhar",
+      cls: "btn good",
+      titulo: "Registrar na sua lista e sincronizar movimentos",
+      fn: async () => {
+        await run(() => a.processoAcompanhar(cnj.trim(), uf));
+        await run(() => a.processoSync(cnj.trim()));
+        await carregarCaso(cnj.trim());
+      },
+    },
+    {
+      rotulo: "🔔 Alertar",
+      cls: "btn ghost",
+      titulo: "Avisar no Telegram quando houver movimentação nova",
+      fn: async () => {
+        const r = (await run(() => a.processoAlertar(cnj.trim()))) as { alertasAtivos?: boolean } | null;
+        if (r?.alertasAtivos) {
+          setAlertasOn(true);
+          toast("🔔 Alertas ativados — você será avisado das movimentações novas");
+        }
+      },
+    },
+    {
+      rotulo: "💬 Explicar",
+      cls: "btn ghost",
+      titulo: "Conversar com o assistente sobre o processo",
+      fn: async () => {
+        if (!caso) await carregarCaso(cnj.trim());
+        setChat((c) =>
+          c.length
+            ? c
+            : [
+                {
+                  quem: "ia",
+                  texto:
+                    "Olá! Sou o assistente do Acompanhe.IA. Respondo com base nos dados públicos deste processo (DataJud/CNJ) e na tabela oficial de movimentos do CNJ — sem inventar. Pergunte o que quiser saber.",
+                  fontes: ["DataJud/CNJ + tabela oficial de movimentos (Res. 46/2007)"],
+                  rodape: "conteúdo informativo, não é parecer jurídico",
+                },
+              ],
+        );
+        document.getElementById("chat-juridico")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      },
+    },
+  ];
+
   return (
     <>
       <div className="card">
         <h3>⚖️ Jurídico — processo por CNJ</h3>
-        <p className="mut">Consulta DataJud (CNJ) com movimentos, projeção (classe, fase, valor, arquivamento) e explicação em linguagem simples.</p>
+        <p className="mut">
+          Busque, acompanhe, receba alertas e converse com o assistente — tudo em linguagem simples, com dados reais do DataJud/CNJ.
+        </p>
         <label>Número CNJ</label>
-        <input className="input" value={cnj} onChange={(e) => setCnj(e.target.value)} placeholder="0006903-69.2014.8.11.0037" />
+        <input className="input" value={cnj} onChange={(e) => setCnj(e.target.value)} placeholder="1058234-41.2026.8.11.0041" />
         <label>UF (tribunal)</label>
         <input className="input" value={uf} onChange={(e) => setUf(e.target.value.toUpperCase())} maxLength={2} />
-        <div className="row" style={{ marginTop: 10 }}>
-          <button
-            className="btn"
-            onClick={async () => {
-              const r = (await run(() => a.processoAcompanhar(cnj, uf))) as unknown;
-              void r;
-              const p = (await run(() => a.processo(cnj))) as { processo: Record<string, unknown> } | null;
-              if (p) setProcesso(p.processo);
-            }}
-          >
-            🔎 Acompanhar
-          </button>
+        <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
+          {acoes.map((ac) => (
+            <button key={ac.rotulo} className={ac.cls} title={ac.titulo} onClick={() => void ac.fn()}>
+              {ac.rotulo}
+            </button>
+          ))}
           <button
             className="btn ghost"
+            title="Buscar movimentações novas no DataJud"
             onClick={async () => {
-              const r = (await run(() => a.processoExplicar(cnj))) as { explicacao?: string } | null;
-              if (r?.explicacao) setExplicacao(r.explicacao);
-            }}
-          >
-            💬 Explicar
-          </button>
-          <button
-            className="btn good"
-            onClick={async () => {
-              const r = (await run(() => a.processoSync(cnj))) as { movimentos?: number } | null;
-              if (r) toast(`Sincronizado: ${r.movimentos} movimentos`);
+              const r = (await run(() => a.processoSync(cnj.trim()))) as { novos?: number } | null;
+              if (r) {
+                toast(`Sincronizado: ${r.novos ?? 0} movimento(s) novo(s)`);
+                await carregarCaso(cnj.trim());
+              }
             }}
           >
             🔄 Sincronizar
           </button>
         </div>
+        {alertasOn && (
+          <p className="mut" style={{ marginTop: 8, color: "var(--good)" }}>
+            🔔 alertas de movimentação ATIVADOS para este processo
+          </p>
+        )}
       </div>
-      {processo && (
+
+      {caso && (
         <div className="card">
-          <h3>Processo</h3>
-          <pre className="mono">{JSON.stringify(processo, null, 2)}</pre>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ margin: 0 }}>Processo</h3>
+            <span className={`tag ${STATUS_CORES[String(caso.status ?? "")] ?? ""}`}>
+              {String(caso.status ?? "desconhecido")}
+            </span>
+          </div>
+          <p className="mono mut" style={{ margin: "6px 0 12px", fontSize: "0.85rem" }}>
+            {String(caso.numeroProcesso ?? cnj)}
+          </p>
+          {resumo && (
+            <p style={{ fontSize: "0.92rem", lineHeight: 1.55, background: "var(--acc-soft)", border: "1px solid var(--line-hair)", borderRadius: 12, padding: "10px 12px" }}>
+              {resumo}
+            </p>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 10, marginTop: 12 }}>
+            {[
+              { rot: "Tipo de ação", val: `${String(caso.classe ?? "—")}${caso.assunto ? ` · ${String(caso.assunto)}` : ""}` },
+              { rot: "Onde tramita", val: `${String(caso.orgaoJulgador ?? "—")} · ${String(caso.tribunal ?? "").toUpperCase()}` },
+              { rot: "Instância", val: String(caso.grau) === "G2" ? "2ª instância (tribunal)" : String(caso.grau) === "G1" ? "1ª instância (juízo)" : String(caso.grau || "—") },
+              { rot: "Quando começou", val: fmtDataBR(String(caso.dataAjuizamento ?? "")) },
+              {
+                rot: "Valor da causa",
+                val: caso.valorDaCausa != null ? fmtBRL(Number(caso.valorDaCausa)) : "não informado nos dados públicos",
+              },
+              {
+                rot: "Última movimentação",
+                val: caso.ultimoMovimento
+                  ? `${String((caso.ultimoMovimento as { nome: string }).nome)} · ${fmtDataBR(String((caso.ultimoMovimento as { dataHora: string }).dataHora))}`
+                  : "sem movimentações registradas",
+              },
+            ].map((f) => (
+              <div key={f.rot} style={{ background: "var(--surface-2)", border: "1px solid var(--line-hair)", borderRadius: 12, padding: "10px 12px" }}>
+                <div className="mut" style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: 0.6 }}>{f.rot}</div>
+                <div style={{ fontSize: "0.9rem", marginTop: 4, lineHeight: 1.4 }}>{f.val}</div>
+              </div>
+            ))}
+          </div>
+
+          <h4 style={{ margin: "16px 0 8px" }}>🗓️ Movimentações ({movimentos.length})</h4>
+          {movimentos.length === 0 && <p className="mut">Nenhuma movimentação registrada ainda — toque em Sincronizar.</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[...movimentos]
+              .sort((x, y) => (x.dataHora < y.dataHora ? 1 : -1))
+              .slice(0, mostrarTecnico ? movimentos.length : 8)
+              .map((m, i) => (
+                <div key={`${m.codigo}-${m.dataHora}-${i}`} className="row" style={{ background: "var(--surface-2)", border: "1px solid var(--line-hair)", borderRadius: 12, padding: "10px 12px", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontSize: "0.86rem" }}>{m.nome}</div>
+                    <div className="mut" style={{ fontSize: "0.75rem" }}>
+                      {fmtDataBR(m.dataHora)} · mov. {m.codigo}
+                    </div>
+                  </div>
+                  <button className="btn ghost" style={{ padding: "6px 10px", fontSize: "0.78rem" }} onClick={() => void enviarPergunta(`o que significa o movimento ${m.nome}?`)}>
+                    o que é?
+                  </button>
+                </div>
+              ))}
+          </div>
+          {movimentos.length > 8 && (
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setMostrarTecnico((v) => !v)}>
+              {mostrarTecnico ? "ver menos" : `ver todas (${movimentos.length})`}
+            </button>
+          )}
+
+          <details style={{ marginTop: 14 }}>
+            <summary className="mut" style={{ cursor: "pointer", fontSize: "0.8rem" }}>ver dados técnicos (JSON)</summary>
+            <pre className="mono" style={{ fontSize: "0.68rem", overflow: "auto", maxHeight: 260, background: "var(--surface-2)", borderRadius: 10, padding: 10 }}>
+              {JSON.stringify(caso, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
-      {explicacao && (
-        <div className="card">
-          <h3>💬 Em palavras simples</h3>
-          <p style={{ fontSize: "0.88rem", lineHeight: 1.5 }}>{explicacao}</p>
+
+      <div className="card" id="chat-juridico">
+        <h3>💬 Assistente do processo</h3>
+        <p className="mut">
+          Respostas fundamentadas: dados reais do processo + tabela oficial de movimentos do CNJ + base legal citada. Nada inventado.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "12px 0" }}>
+          {chat.map((m, i) => (
+            <div
+              key={i}
+              style={{
+                alignSelf: m.quem === "user" ? "flex-end" : "flex-start",
+                maxWidth: "88%",
+                background: m.quem === "user" ? "var(--acc-soft)" : "var(--surface-2)",
+                border: "1px solid var(--line-hair)",
+                borderRadius: 14,
+                padding: "10px 12px",
+              }}
+            >
+              <div style={{ fontSize: "0.88rem", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{m.texto}</div>
+              {m.fontes && m.fontes.length > 0 && (
+                <div className="mut" style={{ fontSize: "0.72rem", marginTop: 8 }}>
+                  fontes: {m.fontes.join(" · ")}
+                </div>
+              )}
+              {m.rodape && (
+                <div className="mut" style={{ fontSize: "0.7rem", marginTop: 4, fontStyle: "italic" }}>{m.rodape}</div>
+              )}
+            </div>
+          ))}
+          {digitando && <div className="mut" style={{ fontSize: "0.8rem" }}>analisando os dados do processo…</div>}
         </div>
-      )}
+        <div className="row" style={{ flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {["Resuma o processo", "Qual o status agora?", "O que aconteceu por último?", "O que significa o último movimento?", "Quais prazos devo observar?", "E agora, qual o próximo passo?"].map((s) => (
+            <button key={s} className="tag" style={{ cursor: "pointer", border: "1px solid var(--line-hair)" }} onClick={() => void enviarPergunta(s)}>
+              {s}
+            </button>
+          ))}
+        </div>
+        <div className="row" style={{ gap: 8 }}>
+          <input
+            className="input"
+            value={pergunta}
+            onChange={(e) => setPergunta(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void enviarPergunta(pergunta);
+            }}
+            placeholder="Pergunte sobre o processo…"
+            style={{ flex: 1 }}
+          />
+          <button className="btn good" onClick={() => void enviarPergunta(pergunta)}>
+            Perguntar
+          </button>
+        </div>
+        <button
+          className="btn ghost"
+          style={{ marginTop: 10 }}
+          onClick={async () => {
+            const r = (await run(() => a.juridicoConsulta(cnj.trim(), uf))) as { consolidado?: boolean } | null;
+            if (r?.consolidado) toast("Você já tem consulta nesta janela de 6h — acompanhamento consolidado");
+            else if (r) toast("Consulta registrada — será encaminhada a advogado com OAB verificada");
+          }}
+        >
+          👨‍⚖️ Falar com advogado (OAB verificada)
+        </button>
+      </div>
     </>
   );
 }

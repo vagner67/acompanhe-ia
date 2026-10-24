@@ -43,6 +43,7 @@ import { investigaRoutes } from "./routes/investiga.js";
 import { licitacoesRoutes } from "./routes/licitacoes.js";
 import { concursosRoutes } from "./routes/concursos.js";
 import { processosRoutes } from "./routes/processos.js";
+import { InMemoryAlertSink, PrismaAlertSink, type AlertSink } from "./jobs/dispatcher.js";
 import { emprestimosRoutes } from "./routes/emprestimos.js";
 import { InMemoryLoanStore, type LoanStore } from "./emprestimos/service.js";
 import { InMemoryVerificacaoStore, type VerificacaoStore } from "./emprestimos/verificacao.js";
@@ -267,12 +268,15 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
   // Assessoria jurídica (plano.md §4) — mesma porta.
   const legalStore: LegalStore =
     deps.juridico?.store ?? (dbForStores ? new PrismaLegalStore(dbForStores) : new InMemoryLegalStore());
+  // RF-B04 — alertas de movimentação: pipeline real (AlertEvent → worker → Telegram).
+  const legalAlertSink: AlertSink = dbForStores ? new PrismaAlertSink(dbForStores) : new InMemoryAlertSink();
   void app.register(
     processosRoutes({
       jwt,
       store: legalStore,
       adminToken: deps.config.ADMIN_TOKEN,
       entitlements,
+      alertSink: legalAlertSink,
       ...(deps.juridico?.oabVerified ? { oabVerified: deps.juridico.oabVerified } : {}),
       ...(deps.juridico?.datajud ? { datajud: deps.juridico.datajud } : {}),
       ...(deps.juridico?.datajudOpts ? { datajudOpts: deps.juridico.datajudOpts } : {}),

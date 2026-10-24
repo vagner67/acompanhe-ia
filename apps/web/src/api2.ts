@@ -104,10 +104,19 @@ export function api(token: string) {
     concursos: (q: string) => get<{ items: Array<Record<string, unknown>>; count: number }>(`/api/concursos?q=${encodeURIComponent(q)}`),
     concursoTimeline: (externalId: string) => get<{ timeline: Array<Record<string, unknown>> }>(`/api/concursos/${externalId}/timeline`),
     // —— Jurídico ——
-    processo: (cnj: string) => get<{ processo: Record<string, unknown> }>(`/api/processos/${cnj}`),
-    processoExplicar: (cnj: string) => get<{ explicacao: string; atos: unknown[] }>(`/api/processos/${cnj}/explicar`),
-    processoAcompanhar: (cnj: string, uf: string) => post(`/api/processos/${cnj}/acompanhar`, { uf }),
-    processoSync: (cnj: string) => post<{ movimentos: number }>(`/api/processos/${cnj}/sync`),
+    processo: (cnj: string) =>
+      get<{ processo: Record<string, unknown>; movimentos: LegalEventDto[]; resumo: string }>(`/api/processos/${encodeURIComponent(cnj)}`),
+    processoExplicar: (cnj: string) => get<{ explicacao: string; atos: unknown[] }>(`/api/processos/${encodeURIComponent(cnj)}/explicar`),
+    processoAcompanhar: (cnj: string, uf: string) => post(`/api/processos/${encodeURIComponent(cnj)}/acompanhar`, { alias: uf.toLowerCase() }),
+    processoSync: (cnj: string) => post<{ novos: number; sigiloso: boolean }>(`/api/processos/${encodeURIComponent(cnj)}/sync`, {}),
+    processoBuscar: (cnj: string, uf: string) =>
+      get<{ processo: Record<string, unknown>; movimentos: LegalEventDto[]; resumo: string; rodape: string }>(
+        `/api/processos/buscar?cnj=${encodeURIComponent(cnj)}&alias=${encodeURIComponent(uf.toLowerCase())}`,
+      ),
+    processoPerguntar: (cnj: string, question: string) =>
+      post<RespostaAssistente>(`/api/processos/${encodeURIComponent(cnj)}/perguntar`, { question }),
+    processoAlertar: (cnj: string) =>
+      post<{ alertasAtivos: boolean; alertas: Array<{ detail: string; kind: string }> }>(`/api/processos/${encodeURIComponent(cnj)}/alertar`, {}),
     juridicoConsulta: (cnj: string, uf: string) => post<{ id: string; consolidado?: boolean }>("/api/juridico/consultas", { cnj, uf }),
     // —— Empréstimos ——
     feed: () => get<{ items: LoanRequestDto[] }>("/api/feed/emprestimos"),
@@ -209,6 +218,21 @@ export interface LoanMatchDto {
   lenderId: string | null;
   status: string;
   expiraEm: string | null;
+}
+export interface LegalEventDto {
+  numeroProcesso: string;
+  codigo: number;
+  nome: string;
+  dataHora: string;
+  tribunal: string;
+}
+export interface RespostaAssistente {
+  resposta: string;
+  fontes: string[];
+  sugestoes: string[];
+  rodape: string;
+  intencao: string;
+  acompanhado?: boolean;
 }
 export interface Gamificacao {
   perfil: { xp: number; level: number; streak: number; ufOptIn: boolean };

@@ -10,6 +10,10 @@ import { z } from "zod";
 
 import { makeJuridicoService, RODAPE_INFORMATIVO, type LegalStore } from "../juridico/service.js";
 import { isValidCnj, aliasFromTribunal, parseCnj, formatCnj } from "../juridico/cnj.js";
+import { mapDoc } from "../juridico/service.js";
+import { responderPergunta, resumoProcesso } from "../juridico/assistente.js";
+import { alertDedupeKey, type AlertSink } from "../jobs/dispatcher.js";
+import type { LegalEventDto } from "../juridico/types.js";
 import type { DatajudClientOpts } from "../juridico/datajud.js";
 import type { JwtService } from "../security/jwt.js";
 import type { Entitlements } from "../entitlements.js";
@@ -25,8 +29,12 @@ export interface ProcessosDeps {
   oabVerified?: Set<string>;
   datajud?: typeof import("../juridico/datajud.js").fetchProcessos;
   datajudOpts?: DatajudClientOpts;
+  /** RF-B04 — alertas de movimentação (dispatcher → worker → Telegram). */
+  alertSink?: AlertSink;
   now?: () => Date;
 }
+
+const perguntaSchema = z.object({ question: z.string().min(3).max(500) });
 
 const acompanharSchema = z.object({
   role: z.enum(["ativo", "passivo", "outro"]).default("outro"),
@@ -47,6 +55,7 @@ export function processosRoutes(deps: ProcessosDeps) {
       ...(deps.oabVerified ? { oabVerified: deps.oabVerified } : {}),
       ...(deps.datajud ? { datajud: deps.datajud } : {}),
       ...(deps.datajudOpts ? { datajudOpts: deps.datajudOpts } : {}),
+      ...(deps.alertSink ? { alertSink: deps.alertSink } : {}),
       ...(deps.now ? { now: deps.now } : {}),
     });
 
@@ -102,7 +111,96 @@ export function processosRoutes(deps: ProcessosDeps) {
       const processo = await deps.store.getCase(subjectId, decodeURIComponent(cnj));
       if (!processo) return reply.code(404).send({ error: "não acompanhado" });
       const movimentos = await deps.store.listEvents(processo.id);
-      return reply.send({ processo, movimentos, rule: "RF-B03/RB5 · eventos com dedupe" });
+      const resumo = resumoProcesso({ caso: processo, movimentos });
+      return reply.send({ processo, movimentos, resumo, rule: "RF-B03/RB5 · eventos com dedupe" });
+    });
+
+    // ── Buscar (pré-visualizar SEM registrar) — botão 🔎 ──
+    app.get("/api/processos/buscar", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      const q = z
+        .object({ cnj: z.string().min(7).max(30), alias: z.string().min(2).max(40).optional() })
+        .parse(req.query ?? {});
+      const decoded = decodeURIComponent(q.cnj);
+      if (!isValidCnj(decoded)) return reply.code(422).send({ error: "número CNJ inválido (DV Res. 65/2008)", rule: "RF-B01" });
+      const parts = parseCnj(decoded)!;
+      const alias = q.alias ?? aliasFromTribunal(parts.justica, parts.tribunal);
+      if (!alias) return reply.code(422).send({ error: "alias do tribunal desconhecido — informe alias", rule: "RF-B02" });
+      const fetchProcessos = deps.datajud ?? (await import("../juridico/datajud.js")).fetchProcessos;
+      const docs = await fetchProcessos(alias, { numeroProcesso: formatCnj(parts).replace(/\D/g, "") }, deps.datajudOpts ?? {});
+      const d = docs[0];
+      if (!d) return reply.code(404).send({ error: "processo não encontrado no DataJud", rule: "fonte pública CNJ" });
+      const caso = mapDoc(d, alias);
+      const movimentos: LegalEventDto[] = (d.movimentos ?? []).map((m) => ({
+        numeroProcesso: formatCnj(parts),
+        codigo: m.codigo,
+        nome: m.nome,
+        dataHora: m.dataHora,
+        tribunal: alias,
+      }));
+      const resumo = resumoProcesso({ caso, movimentos });
+      // NADA é gravado: busca é só pré-visualização (o registro é o Acompanhar).
+      return reply.send({ processo: caso, movimentos, resumo, rodape: RODAPE_INFORMATIVO, rule: "buscar = preview sem registro" });
+    });
+
+    // ── Perguntar ao assistente (grounded) — botão 💬 Explicar / chat ──
+    app.post("/api/processos/:cnj/perguntar", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      const { cnj } = req.params as { cnj: string };
+      const decoded = decodeURIComponent(cnj);
+      const { question } = perguntaSchema.parse(req.body ?? {});
+      // Caso acompanhado → dados persistidos; senão → consulta ao DataJud (sem gravar).
+      const caso = await deps.store.getCase(userId, decoded);
+      let movimentos: LegalEventDto[] = [];
+      if (caso) {
+        movimentos = await deps.store.listEvents(caso.id);
+      } else {
+        const parts = parseCnj(decoded);
+        if (!parts || !isValidCnj(decoded)) return reply.code(422).send({ error: "número CNJ inválido" });
+        const alias = aliasFromTribunal(parts.justica, parts.tribunal) ?? (req.query as { alias?: string } | undefined)?.alias;
+        if (!alias) return reply.code(422).send({ error: "alias do tribunal desconhecido — informe alias", rule: "RF-B02" });
+        const fetchProcessos = deps.datajud ?? (await import("../juridico/datajud.js")).fetchProcessos;
+        const docs = await fetchProcessos(alias, { numeroProcesso: decoded.replace(/\D/g, "") }, deps.datajudOpts ?? {});
+        const d = docs[0];
+        if (!d) return reply.code(404).send({ error: "processo não encontrado no DataJud" });
+        const mapped = mapDoc(d, alias);
+        movimentos = (d.movimentos ?? []).map((m) => ({ numeroProcesso: decoded, codigo: m.codigo, nome: m.nome, dataHora: m.dataHora, tribunal: alias }));
+        const r = responderPergunta(question, { caso: mapped, movimentos });
+        return reply.send({ ...r, acompanhado: false });
+      }
+      const r = responderPergunta(question, { caso, movimentos });
+      return reply.send({ ...r, acompanhado: true });
+    });
+
+    // ── Alertar (RF-B04) — botão 🔔 ──
+    app.post("/api/processos/:cnj/alertar", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      const { cnj } = req.params as { cnj: string };
+      const decoded = decodeURIComponent(cnj);
+      const caso = await deps.store.getCase(userId, decoded);
+      if (!caso) return reply.code(404).send({ error: "acompanhe o processo primeiro (botão Acompanhar)", rule: "RF-B04" });
+      if (!caso.alertasAtivos) await deps.store.updateCase(userId, decoded, { alertasAtivos: true });
+      // Confirmação auditável no mesmo pipeline dos alertas (idempotente por dedupe).
+      if (deps.alertSink) {
+        await deps.alertSink.emit({
+          userId,
+          kind: "prazo_alerta",
+          refId: decoded,
+          detail: `alertas de movimentação ativados para ${decoded}`,
+          dedupeKey: alertDedupeKey(userId, "prazo_alerta", decoded, "alertar-on"),
+        });
+      }
+      const alertas = deps.alertSink ? await deps.alertSink.list(userId) : [];
+      return reply.send({ alertasAtivos: true, alertas: alertas.slice(-10), rule: "RF-B04 · alerta consolidado por janela" });
     });
 
     app.post("/api/processos/:cnj/sync", async (req: FastifyRequest, reply: FastifyReply) => {

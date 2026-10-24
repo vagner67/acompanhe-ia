@@ -12,6 +12,7 @@
 import { createHash } from "node:crypto";
 
 import type { DatajudDoc, LegalCaseDto, LegalEventDto, ProcessoFilter } from "./types.js";
+import { alertDedupeKey } from "../jobs/dispatcher.js";
 
 export const RODAPE_INFORMATIVO = "conteúdo informativo, não é parecer jurídico";
 export const SIGILO_MSG = "processo sigiloso — dados limitados";
@@ -53,6 +54,8 @@ export function mapDoc(doc: DatajudDoc, tribunal: string): LegalCaseDto {
     ultimoMovimento: sigilo > 0 || !ultimo ? null : { codigo: ultimo.codigo, nome: ultimo.nome, dataHora: ultimo.dataHora },
     movimentosCount: sigilo > 0 ? 0 : movs.length,
     fieldStatus: "pendente",
+    // Sempre false aqui: sincronizar() preserva o flag real do caso (não zera).
+    alertasAtivos: false,
     raw: sigilo > 0 ? { sigiloso: true } : doc,
   };
 }
@@ -175,6 +178,8 @@ export interface JuridicoDeps {
   oabVerified?: Set<string>;
   datajud?: typeof import("./datajud.js").fetchProcessos;
   datajudOpts?: import("./datajud.js").DatajudClientOpts;
+  /** RF-B04 — destino dos alertas de movimentação (dispatcher → worker → Telegram). */
+  alertSink?: import("../jobs/dispatcher.js").AlertSink;
   now?: () => Date;
 }
 
@@ -204,6 +209,7 @@ export function makeJuridicoService(deps: JuridicoDeps) {
       ultimoMovimento: null,
       movimentosCount: 0,
       fieldStatus: "pendente",
+      alertasAtivos: false,
       raw: null,
     };
     const { id, created } = await deps.store.createCase({ ...doc, userId, role, alias });
@@ -236,12 +242,25 @@ export function makeJuridicoService(deps: JuridicoDeps) {
     const ultimo = eventos[eventos.length - 1];
     // numeroProcesso NÃO é sobrescrito: a chave é o CNJ formatado registrado
     // pelo usuário (o DataJud devolve só dígitos) — teste de regressão 23/10.
-    const { numeroProcesso: _chave, ...projecao } = mapDoc(d, alias || tribunalOf(caso));
+    // alertasAtivos NÃO é sobrescrito: mapDoc zera o campo; o flag real é do caso.
+    const { numeroProcesso: _chave, alertasAtivos: _alertas, ...projecao } = mapDoc(d, alias || tribunalOf(caso));
     await deps.store.updateCase(userId, cnj, {
       ...projecao,
       movimentosCount: eventos.length,
       ultimoMovimento: ultimo ? { codigo: ultimo.codigo, nome: ultimo.nome, dataHora: ultimo.dataHora } : null,
     });
+    // RF-B04 — alerta REAL de movimentação nova (só com o botão Alertar ligado):
+    // dispatcher → AlertEvent(queued) → worker → Telegram. Dedupe por hora (RB4/RB5).
+    if (novos > 0 && caso.alertasAtivos && deps.alertSink) {
+      const janela = now().toISOString().slice(0, 13); // AAAA-MM-DDTHH
+      await deps.alertSink.emit({
+        userId,
+        kind: "novo_movimento",
+        refId: cnj,
+        detail: `${novos} nova(s) movimentação(ões) em ${cnj}: ${d.movimentos?.[d.movimentos.length - 1]?.nome ?? "atualização"}`,
+        dedupeKey: alertDedupeKey(userId, "novo_movimento", cnj, janela),
+      });
+    }
     return { novos, sigiloso: false };
   }
 

@@ -54,6 +54,7 @@ export class PrismaLegalStore implements LegalStore {
         ultimoMovimento: c.ultimoMovimento == null ? Prisma.DbNull : (c.ultimoMovimento as object),
         movimentosCount: c.movimentosCount,
         fieldStatus: c.fieldStatus,
+        alertasAtivos: c.alertasAtivos ?? false,
         raw: c.raw == null ? Prisma.DbNull : (c.raw as object),
         createdAt: iso(),
         updatedAt: iso(),
@@ -90,6 +91,7 @@ export class PrismaLegalStore implements LegalStore {
         ...(patch.ultimoMovimento !== undefined ? { ultimoMovimento: patch.ultimoMovimento === null ? Prisma.DbNull : (patch.ultimoMovimento as object) } : {}),
         ...(patch.movimentosCount !== undefined ? { movimentosCount: patch.movimentosCount } : {}),
         ...(patch.fieldStatus !== undefined ? { fieldStatus: patch.fieldStatus } : {}),
+        ...(patch.alertasAtivos !== undefined ? { alertasAtivos: patch.alertasAtivos } : {}),
         ...(patch.raw !== undefined ? { raw: patch.raw === null ? Prisma.DbNull : (patch.raw as object) } : {}),
         updatedAt: iso(),
       },
@@ -212,6 +214,7 @@ function rowToLegal(row: any): LegalCaseDto & { id: string; userId: string; role
     ultimoMovimento: row.ultimoMovimento ?? null,
     movimentosCount: row.movimentosCount,
     fieldStatus: row.fieldStatus,
+    alertasAtivos: row.alertasAtivos ?? false,
     raw: row.raw ?? null,
   };
 }

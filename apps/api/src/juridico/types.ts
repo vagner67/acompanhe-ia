@@ -52,6 +52,8 @@ export interface LegalCaseDto {
   ultimoMovimento: { codigo: number; nome: string; dataHora: string } | null;
   movimentosCount: number;
   fieldStatus: "pendente" | "validado"; // RD3 — dado só de texto livre não valida
+  /** RF-B04 — alertas de movimentação ligados (botão Alertar). */
+  alertasAtivos: boolean;
   raw: unknown;
 }
 

@@ -231,6 +231,7 @@ model LegalCase {
   ultimoMovimento Json?
   movimentosCount Int   @default(0)
   fieldStatus   String  @default("pendente")
+  alertasAtivos Boolean @default(false) // RF-B04 — botão Alertar (novo_movimento → Telegram)
   raw           Json?
   createdAt String   @db.Text
   updatedAt String   @db.Text
