@@ -117,6 +117,12 @@ export function api(token: string) {
       post<RespostaAssistente>(`/api/processos/${encodeURIComponent(cnj)}/perguntar`, { question }),
     processoAlertar: (cnj: string) =>
       post<{ alertasAtivos: boolean; alertas: Array<{ detail: string; kind: string }> }>(`/api/processos/${encodeURIComponent(cnj)}/alertar`, {}),
+    processoPesquisar: (q: string, uf: string, pagina: number) =>
+      get<PesquisaTerceiros>(
+        `/api/processos/pesquisar?q=${encodeURIComponent(q)}&uf=${encodeURIComponent(uf)}&pagina=${pagina}`,
+      ),
+    processoDetalhesLote: (cnjs: string[]) =>
+      get<{ itens: DetalheTercero[]; rodape: string }>(`/api/processos/detalhes-lote?cnjs=${encodeURIComponent(cnjs.join(","))}`),
     juridicoConsulta: (cnj: string, uf: string) => post<{ id: string; consolidado?: boolean }>("/api/juridico/consultas", { cnj, uf }),
     // —— Empréstimos ——
     feed: () => get<{ items: LoanRequestDto[] }>("/api/feed/emprestimos"),
@@ -233,6 +239,47 @@ export interface RespostaAssistente {
   rodape: string;
   intencao: string;
   acompanhado?: boolean;
+}
+export interface ProcessoTercero {
+  numeroProcesso: string;
+  codigoInterno: string | null;
+  uf: string;
+  foro: string | null;
+  classe: string | null;
+  assunto: string | null;
+  participacao: string | null;
+  nomeParte: string | null;
+  dataDistribuicao: string | null;
+  localDistribuicao: string | null;
+  fonte: string;
+  url: string;
+}
+export interface ResultadoEsaj {
+  estado: "resultados" | "multiplos" | "vazio" | "bloqueado" | "erro";
+  uf: string;
+  fonte: string;
+  total: number | null;
+  pagina: number;
+  ultimaPagina: number;
+  itens: ProcessoTercero[];
+}
+export interface PesquisaTerceiros {
+  tipo: "nome" | "cpf" | "cnpj";
+  formato?: string;
+  advertencia?: string;
+  fontes: ResultadoEsaj[];
+  itens: ProcessoTercero[];
+  rodape: string;
+}
+export interface DetalheTercero {
+  numeroProcesso: string;
+  status: string | null;
+  classe: string | null;
+  orgaoJulgador: string | null;
+  valorDaCausa: number | null;
+  ultimoMovimento: { nome: string; dataHora: string } | null;
+  dataAjuizamento: string | null;
+  fonte: string;
 }
 export interface Gamificacao {
   perfil: { xp: number; level: number; streak: number; ufOptIn: boolean };

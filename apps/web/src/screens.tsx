@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { XP } from "@acompanhe/shared";
-import { api, adminApi, type Gamificacao, type GastoDto, type LegalEventDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type StatusAssinatura } from "./api2";
+import { api, adminApi, type DetalheTercero, type Gamificacao, type GastoDto, type LegalEventDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type ProcessoTercero, type ResultadoEsaj, type StatusAssinatura } from "./api2";
 
 type Api = ReturnType<typeof api>;
 interface P {
@@ -391,6 +391,17 @@ export function JuridicoScreen({ a, toast }: P) {
   const [digitando, setDigitando] = useState(false);
   const [alertasOn, setAlertasOn] = useState(false);
   const [mostrarTecnico, setMostrarTecnico] = useState(false);
+  // —— busca unificada: processos de terceiros + progresso real (plano-busca-unificada §3.5) ——
+  const [terceiros, setTerceiros] = useState<ProcessoTercero[]>([]);
+  const [fontesInfo, setFontesInfo] = useState<ResultadoEsaj[]>([]);
+  const [rodapeTerc, setRodapeTerc] = useState("");
+  const [detalhesMap, setDetalhesMap] = useState<Record<string, DetalheTercero>>({});
+  const [progresso, setProgresso] = useState<{ ativo: boolean; feitos: number; total: number; rotulo: string }>({
+    ativo: false,
+    feitos: 0,
+    total: 0,
+    rotulo: "",
+  });
   const run = async (fn: () => Promise<unknown>) => {
     try {
       const r = await fn();
@@ -429,27 +440,119 @@ export function JuridicoScreen({ a, toast }: P) {
     }
   };
 
-  const acoes = [
-    {
-      rotulo: "🔎 Buscar",
-      cls: "btn",
-      titulo: "Ver o processo sem registrar",
-      fn: async () => {
-        const r = (await run(() => a.processoBuscar(cnj.trim(), uf))) as Awaited<ReturnType<typeof a.processoBuscar>> | null;
+  // Detecção local do formato (leitura de UI); o servidor é a autoridade e valida os DVs.
+  const digitosConsulta = cnj.trim().replace(/\D+/g, "");
+  const tipoConsulta: "" | "cnj" | "cpf" | "cnpj" | "nome" = !cnj.trim()
+    ? ""
+    : digitosConsulta.length === 20
+      ? "cnj"
+      : digitosConsulta.length === 11
+        ? "cpf"
+        : digitosConsulta.length === 14
+          ? "cnpj"
+          : "nome";
+  const rotuloTipo = { cnj: "número de processo", cpf: "CPF", cnpj: "CNPJ", nome: "nome", "": "" }[tipoConsulta];
+
+  const avancar = (feitos: number, total: number, rotulo: string) =>
+    setProgresso({ ativo: true, feitos, total, rotulo });
+
+  const buscarRapida = async () => {
+    const texto = cnj.trim();
+    if (!texto) return;
+    avancar(1, 2, "consulta identificada — consultando a fonte…");
+    try {
+      if (tipoConsulta === "cnj") {
+        const r = (await a.processoBuscar(texto, uf)) as Awaited<ReturnType<typeof a.processoBuscar>>;
+        setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
         if (r?.processo) {
           setCaso(r.processo);
           setMovimentos(r.movimentos ?? []);
           setResumo(r.resumo ?? "");
           setAlertasOn(false);
           setChat([]);
+          setTerceiros([]);
+          setFontesInfo([]);
         }
-      },
+        return;
+      }
+      const r = await a.processoPesquisar(texto, uf.toUpperCase() === "TODAS" ? "todas" : uf, 1);
+      setTerceiros(r.itens);
+      setFontesInfo(r.fontes);
+      setRodapeTerc(r.rodape);
+      setDetalhesMap({});
+      setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
+      if (!r.itens.length) toast("nenhum processo público encontrado nesta consulta (ver rodapé)");
+    } catch (e) {
+      setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
+      toast(`⚠ ${(e as Error).message}`);
+    }
+  };
+
+  const pesquisaProfunda = async () => {
+    const texto = cnj.trim();
+    if (!texto) return;
+    if (tipoConsulta === "cnj") {
+      toast("🔬 a pesquisa profunda é por NOME, CPF ou CNPJ — para um processo use 🔎 Buscar");
+      return;
+    }
+    avancar(1, 3, "consultando páginas das fontes verificadas (AL, SP)…");
+    try {
+      const r1 = await a.processoPesquisar(texto, "todas", 1);
+      let itens = [...r1.itens];
+      let fontes = [...r1.fontes];
+      const extras: Array<{ uf: string; pagina: number }> = [];
+      for (const f of r1.fontes) {
+        for (let p = 2; p <= Math.min(f.ultimaPagina, 10); p++) extras.push({ uf: f.uf, pagina: p });
+      }
+      // etapas REAIS: 1 detecção + 1 página-1 + páginas extras + 1 cruzamento DataJud
+      const total = 2 + extras.length + 1;
+      avancar(2, total, `página 1 · ${itens.length} processo(s) até aqui`);
+      for (let i = 0; i < extras.length; i++) {
+        const e = extras[i]!;
+        avancar(2 + i, total, `${e.uf.toUpperCase()} — página ${e.pagina} de ${Math.min(r1.fontes.find((f) => f.uf === e.uf)?.ultimaPagina ?? 1, 10)}`);
+        const rp = await a.processoPesquisar(texto, e.uf, e.pagina);
+        itens = itens.concat(rp.itens);
+        fontes = fontes.concat(rp.fontes);
+        avancar(3 + i, total, `${e.uf.toUpperCase()} — página ${e.pagina} · ${itens.length} processo(s) até aqui`);
+      }
+      avancar(total - 1, total, "cruzando com DataJud (status, valor, último movimento)…");
+      const cnjs = [...new Set(itens.map((it) => it.numeroProcesso))].slice(0, 30);
+      const mapa: Record<string, DetalheTercero> = {};
+      if (cnjs.length) {
+        const det = await a.processoDetalhesLote(cnjs);
+        for (const it of det.itens) mapa[it.numeroProcesso] = it;
+      }
+      setDetalhesMap(mapa);
+      setTerceiros(itens);
+      setFontesInfo(fontes);
+      setRodapeTerc(r1.rodape);
+      toast(`🔬 pesquisa profunda concluída — ${itens.length} processo(s) de terceiros`);
+    } catch (e) {
+      toast(`⚠ ${(e as Error).message}`);
+    } finally {
+      setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
+    }
+  };
+
+  const acoes = [
+    {
+      rotulo: "🔎 Buscar",
+      cls: "btn",
+      titulo: "Processo por CNJ · processos de terceiros por nome, CPF ou CNPJ",
+      fn: buscarRapida,
+    },
+    {
+      rotulo: "🔬 Pesquisa profunda",
+      cls: "btn ghost",
+      titulo: "Nome/CPF/CNPJ → todas as fontes verificadas, todas as páginas + cruzamento DataJud",
+      fn: pesquisaProfunda,
     },
     {
       rotulo: "⚖️ Acompanhar",
       cls: "btn good",
       titulo: "Registrar na sua lista e sincronizar movimentos",
       fn: async () => {
+        if (tipoConsulta !== "cnj") return toast("⚖️ acompanhar é para um processo — informe o número CNJ ou abra um dos resultados");
         await run(() => a.processoAcompanhar(cnj.trim(), uf));
         await run(() => a.processoSync(cnj.trim()));
         await carregarCaso(cnj.trim());
@@ -460,6 +563,7 @@ export function JuridicoScreen({ a, toast }: P) {
       cls: "btn ghost",
       titulo: "Avisar no Telegram quando houver movimentação nova",
       fn: async () => {
+        if (tipoConsulta !== "cnj") return toast("🔔 alertar é para um processo — informe o número CNJ ou abra um dos resultados");
         const r = (await run(() => a.processoAlertar(cnj.trim()))) as { alertasAtivos?: boolean } | null;
         if (r?.alertasAtivos) {
           setAlertasOn(true);
@@ -472,6 +576,7 @@ export function JuridicoScreen({ a, toast }: P) {
       cls: "btn ghost",
       titulo: "Conversar com o assistente sobre o processo",
       fn: async () => {
+        if (tipoConsulta !== "cnj") return toast("💬 explicar é para um processo — informe o número CNJ ou abra um dos resultados");
         if (!caso) await carregarCaso(cnj.trim());
         setChat((c) =>
           c.length
@@ -494,14 +599,28 @@ export function JuridicoScreen({ a, toast }: P) {
   return (
     <>
       <div className="card">
-        <h3>⚖️ Jurídico — processo por CNJ</h3>
+        <h3>⚖️ Jurídico — busca por nome, CPF ou número do processo</h3>
         <p className="mut">
-          Busque, acompanhe, receba alertas e converse com o assistente — tudo em linguagem simples, com dados reais do DataJud/CNJ.
+          Um campo único identifica o que você digitou. CNJ abre o processo (DataJud); nome, CPF ou CNPJ lista
+          processos públicos em que a pessoa/empresa figura como parte (processos de terceiros).
         </p>
-        <label>Número CNJ</label>
-        <input className="input" value={cnj} onChange={(e) => setCnj(e.target.value)} placeholder="1058234-41.2026.8.11.0041" />
-        <label>UF (tribunal)</label>
-        <input className="input" value={uf} onChange={(e) => setUf(e.target.value.toUpperCase())} maxLength={2} />
+        <label>Nome, CPF ou número do processo</label>
+        <input
+          className="input"
+          value={cnj}
+          onChange={(e) => setCnj(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void buscarRapida();
+          }}
+          placeholder="ex.: João Carlos da Silva · 529.982.247-25 · 1058234-41.2026.8.11.0041"
+        />
+        {tipoConsulta && (
+          <span className="tag green" style={{ marginTop: 6, alignSelf: "flex-start" }}>
+            detectado: {rotuloTipo}
+          </span>
+        )}
+        <label>UF (tribunal) — use "todas" na pesquisa por nome</label>
+        <input className="input" value={uf} onChange={(e) => setUf(e.target.value.toUpperCase())} maxLength={5} />
         <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
           {acoes.map((ac) => (
             <button key={ac.rotulo} className={ac.cls} title={ac.titulo} onClick={() => void ac.fn()}>
@@ -512,6 +631,7 @@ export function JuridicoScreen({ a, toast }: P) {
             className="btn ghost"
             title="Buscar movimentações novas no DataJud"
             onClick={async () => {
+              if (tipoConsulta !== "cnj") return toast("🔄 sincronizar é para um processo — informe o número CNJ");
               const r = (await run(() => a.processoSync(cnj.trim()))) as { novos?: number } | null;
               if (r) {
                 toast(`Sincronizado: ${r.novos ?? 0} movimento(s) novo(s)`);
@@ -522,6 +642,33 @@ export function JuridicoScreen({ a, toast }: P) {
             🔄 Sincronizar
           </button>
         </div>
+        {progresso.ativo && (
+          <div style={{ marginTop: 12 }}>
+            <div
+              style={{
+                height: 10,
+                background: "var(--surface-2)",
+                border: "1px solid var(--line-hair)",
+                borderRadius: 999,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: `${progresso.total ? Math.round((progresso.feitos / progresso.total) * 100) : 0}%`,
+                  height: "100%",
+                  background: "var(--acc, #2563eb)",
+                  borderRadius: 999,
+                  transition: "width .35s ease",
+                }}
+              />
+            </div>
+            <div className="mut" style={{ fontSize: "0.75rem", marginTop: 4 }}>
+              {progresso.rotulo}
+              {progresso.total ? ` · etapa ${Math.min(progresso.feitos + 1, progresso.total)}/${progresso.total}` : ""}
+            </div>
+          </div>
+        )}
         {alertasOn && (
           <p className="mut" style={{ marginTop: 8, color: "var(--good)" }}>
             🔔 alertas de movimentação ATIVADOS para este processo
@@ -529,8 +676,76 @@ export function JuridicoScreen({ a, toast }: P) {
         )}
       </div>
 
-      {caso && (
+      {(terceiros.length > 0 || fontesInfo.length > 0) && (
         <div className="card">
+          <h3>🔎 Processos de terceiros encontrados</h3>
+          {fontesInfo.map((f) => (
+            <p key={f.fonte} className="mut" style={{ fontSize: "0.78rem", margin: "2px 0" }}>
+              {f.fonte.toUpperCase()}:{" "}
+              {f.estado === "resultados"
+                ? `${f.itens.length} nesta página · ${f.total ?? "?"} processo(s) no total`
+                : f.estado === "multiplos"
+                  ? "muitos processos para esse termo — informe nome e sobrenome mais completos"
+                  : f.estado === "vazio"
+                    ? "sem registros públicos para esta consulta"
+                    : f.estado === "bloqueado"
+                      ? "fonte bloqueou o acesso no momento — tente mais tarde ou use o portal do tribunal"
+                      : "fonte indisponível neste momento"}
+            </p>
+          ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            {terceiros.map((it) => {
+              const det = detalhesMap[it.numeroProcesso];
+              return (
+                <div
+                  key={`${it.fonte}-${it.numeroProcesso}-${it.codigoInterno ?? ""}`}
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--line-hair)", borderRadius: 12, padding: "10px 12px" }}
+                >
+                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                    <div>
+                      <div className="mono" style={{ fontSize: "0.82rem" }}>{it.numeroProcesso}</div>
+                      <div style={{ fontSize: "0.84rem", marginTop: 2 }}>
+                        {it.participacao ? `${it.participacao}: ` : ""}
+                        {it.nomeParte ?? "parte não exibida pela fonte"}
+                      </div>
+                      <div className="mut" style={{ fontSize: "0.75rem", marginTop: 2 }}>
+                        {[it.classe, it.assunto].filter(Boolean).join(" · ") || "classe/assunto não informados"}
+                        {it.foro ? ` · ${it.foro}` : ""}
+                        {it.dataDistribuicao ? ` · distribuído em ${it.dataDistribuicao}` : ""}
+                      </div>
+                      <div className="mut" style={{ fontSize: "0.75rem", marginTop: 2 }}>
+                        {det
+                          ? `status (DataJud): ${det.status ?? "não informado"}${det.ultimoMovimento ? ` · último movimento: ${det.ultimoMovimento.nome}` : ""}`
+                          : "status: não cruzado com DataJud (use 🔬 Pesquisa profunda)"}
+                      </div>
+                    </div>
+                    <div className="row" style={{ gap: 6 }}>
+                      <button
+                        className="btn"
+                        style={{ padding: "6px 10px", fontSize: "0.78rem" }}
+                        onClick={async () => {
+                          setCnj(it.numeroProcesso);
+                          await carregarCaso(it.numeroProcesso);
+                          document.getElementById("processo-juridico")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                      >
+                        abrir
+                      </button>
+                      <a className="btn ghost" style={{ padding: "6px 10px", fontSize: "0.78rem" }} href={it.url} target="_blank" rel="noreferrer noopener">
+                        fonte
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mut" style={{ fontSize: "0.72rem", marginTop: 10, lineHeight: 1.5 }}>{rodapeTerc}</p>
+        </div>
+      )}
+
+      {caso && (
+        <div className="card" id="processo-juridico">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ margin: 0 }}>Processo</h3>
             <span className={`tag ${STATUS_CORES[String(caso.status ?? "")] ?? ""}`}>

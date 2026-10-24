@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { makeJuridicoService, RODAPE_INFORMATIVO, type LegalStore } from "../juridico/service.js";
 import { isValidCnj, aliasFromTribunal, parseCnj, formatCnj } from "../juridico/cnj.js";
+import { detectarConsulta } from "../juridico/deteccao.js";
 import { mapDoc } from "../juridico/service.js";
 import { responderPergunta, resumoProcesso } from "../juridico/assistente.js";
 import { alertDedupeKey, type AlertSink } from "../jobs/dispatcher.js";
@@ -145,6 +146,69 @@ export function processosRoutes(deps: ProcessosDeps) {
       const resumo = resumoProcesso({ caso, movimentos });
       // NADA é gravado: busca é só pré-visualização (o registro é o Acompanhar).
       return reply.send({ processo: caso, movimentos, resumo, rodape: RODAPE_INFORMATIVO, rule: "buscar = preview sem registro" });
+    });
+
+    // ── Busca unificada por NOME/CPF/CNPJ → processos de terceiros (plano-busca-unificada §3.4) ──
+    app.get("/api/processos/pesquisar", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      const q = z
+        .object({
+          q: z.string().min(3).max(120),
+          uf: z.string().min(2).max(10).optional(),
+          pagina: z.coerce.number().int().min(1).max(10).optional(),
+        })
+        .parse(req.query ?? {});
+      const det = detectarConsulta(decodeURIComponent(q.q));
+      if (det.erro) return reply.code(422).send({ error: det.erro, rule: "deteccao/DV real" });
+      if (det.tipo === "cnj") {
+        return reply.code(422).send({ error: "número de processo — use a busca de processo do app", rule: "deteccao" });
+      }
+      const ufs = q.uf && q.uf.toLowerCase() !== "todas" ? [q.uf.toLowerCase()] : undefined;
+      const { pesquisarTerceiros } = await import("../juridico/pesquisa.js");
+      const r = await pesquisarTerceiros(det.tipo as "nome" | "cpf" | "cnpj", det.valor, {
+        ...(ufs ? { ufs } : {}),
+        ...(q.pagina ? { pagina: q.pagina } : {}),
+        ...(deps.datajudOpts?.fetchImpl ? { fetchImpl: deps.datajudOpts.fetchImpl } : {}),
+      });
+      return reply.send({
+        tipo: det.tipo,
+        ...(det.formato ? { formato: det.formato } : {}),
+        ...(det.advertencia ? { advertencia: det.advertencia } : {}),
+        fontes: r.fontes,
+        itens: r.itens,
+        rodape: r.rodape,
+      });
+    });
+
+    // ── Cruzamento real com DataJud dos CNJs achados na pesquisa (plano-busca-unificada §3.4) ──
+    app.get("/api/processos/detalhes-lote", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      const q = z.object({ cnjs: z.string().min(7).max(2000) }).parse(req.query ?? {});
+      const lista = decodeURIComponent(q.cnjs)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (lista.length < 1 || lista.length > 30) {
+        return reply.code(422).send({ error: "informe de 1 a 30 números CNJ separados por vírgula", rule: "lote" });
+      }
+      for (const c of lista) {
+        if (!isValidCnj(c)) return reply.code(422).send({ error: `número CNJ inválido: ${c}`, rule: "RF-B01" });
+      }
+      const fetchProcessos = deps.datajud ?? (await import("../juridico/datajud.js")).fetchProcessos;
+      const { detalharProcessos } = await import("../juridico/pesquisa.js");
+      const itens = await detalharProcessos(lista, {
+        datajud: fetchProcessos,
+        ...(deps.datajudOpts ? { datajudOpts: deps.datajudOpts } : {}),
+      });
+      return reply.send({ itens, rodape: RODAPE_INFORMATIVO });
     });
 
     // ── Perguntar ao assistente (grounded) — botão 💬 Explicar / chat ──
