@@ -9,3 +9,6 @@ __pycache__/
 .pytest_cache/
 coverage/
 .DS_Store
+
+# CI do GitHub não sobe com o PAT atual (escopo 'workflow' ausente) — reativar renovando o token
+.github/
