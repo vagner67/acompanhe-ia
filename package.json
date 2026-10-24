@@ -1,0 +1,25 @@
+{
+  "name": "acompanhe-ia",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Acompanhe.IA — bot + Mini App Telegram · docs em /home/user/acompanhe-ia-v2 (00–10)",
+  "engines": { "node": ">=20" },
+  "packageManager": "pnpm@10.0.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "scripts": {
+    "build": "pnpm -r --filter @acompanhe/shared build && pnpm -r --filter @acompanhe/api --filter @acompanhe/web build",
+    "typecheck": "tsc -b packages/shared apps/api",
+    "test": "vitest run --root apps/api && vitest run --root packages/shared",
+    "test:all": "pnpm test && python3 -m unittest discover -s apps/bot/tests -v",
+    "dev:api": "tsx watch apps/api/src/server.ts",
+    "dev:web": "vite --config apps/web/vite.config.ts",
+    "audit:high": "pnpm audit --audit-level=high"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "vitest": "^5.0.5"
+  }
+}

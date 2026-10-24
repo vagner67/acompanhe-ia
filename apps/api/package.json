@@ -1,0 +1,31 @@
+{
+  "name": "@acompanhe/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "worker": "tsx src/worker.ts"
+  },
+  "dependencies": {
+    "@acompanhe/db": "workspace:^",
+    "@acompanhe/shared": "workspace:*",
+    "@fastify/cors": "^10.1.0",
+    "@fastify/static": "^10.1.7",
+    "fastify": "^5.12.7",
+    "google-libphonenumber": "^3.2.47",
+    "jose": "^5.9.6",
+    "pdfkit": "^0.15.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/google-libphonenumber": "^7.4.31",
+    "@types/node": "^22.9.0",
+    "@types/pdfkit": "^0.17.7",
+    "typescript": "^5.6.3",
+    "vitest": "^5.0.5"
+  }
+}

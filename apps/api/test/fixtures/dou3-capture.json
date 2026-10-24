@@ -1,0 +1,11 @@
+{
+ "_capture": {
+  "source": "DOU in.gov.br/leiturajornal",
+  "section": "DO3",
+  "date": "22-10-2026",
+  "capturedAt": "2026-10-23",
+  "note": "embed jsonArray da página de leitura"
+ },
+ "jsonArray": [],
+ "concurso_sample": []
+}

@@ -1,0 +1,1197 @@
+{
+ "_capture": {
+  "source": "DataJud CNJ api_publica_tjmt/_search",
+  "capturedAt": "2026-10-23",
+  "note": "doc REAL — envelope Elasticsearch; dataAjuizamento='20140805000000'; movimentos[] com codigo/dataHora/nome"
+ },
+ "envelope": {
+  "took": 35673,
+  "total": {
+   "value": 10000,
+   "relation": "gte"
+  }
+ },
+ "hit": {
+  "grau": "G1",
+  "numeroProcesso": "00069036920148110037",
+  "dataAjuizamento": "20140805000000",
+  "nivelSigilo": 0,
+  "orgaoJulgador": {
+   "codigo": 7303,
+   "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR",
+   "codigoMunicipioIBGE": null
+  },
+  "classe": {
+   "codigo": 1116,
+   "nome": "Execução Fiscal"
+  },
+  "movimentos": [
+   {
+    "codigo": 26,
+    "dataHora": "2014-09-23T14:01:31.000Z",
+    "nome": "Distribuição",
+    "complementosTabelados": [
+     {
+      "codigo": 2,
+      "descricao": "tipo_de_distribuicao_redistribuicao",
+      "valor": 2,
+      "nome": "sorteio"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2014-09-24T16:54:23.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 51,
+    "dataHora": "2014-09-25T13:12:20.000Z",
+    "nome": "Conclusão",
+    "complementosTabelados": [
+     {
+      "codigo": 3,
+      "descricao": "tipo_de_conclusao",
+      "valor": 5,
+      "nome": "para despacho"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2014-12-05T15:48:37.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2014-12-11T09:34:03.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2015-01-13T10:49:51.000Z",
+    "nome": "Documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 51,
+    "dataHora": "2016-01-19T12:32:19.000Z",
+    "nome": "Conclusão",
+    "complementosTabelados": [
+     {
+      "codigo": 3,
+      "descricao": "tipo_de_conclusao",
+      "valor": 5,
+      "nome": "para despacho"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2016-09-29T16:32:28.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 982,
+    "dataHora": "2021-10-07T13:16:58.000Z",
+    "nome": "Remessa",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2021-10-07T13:17:09.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2021-10-07T14:08:01.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 1061,
+    "dataHora": "2021-10-12T01:01:35.000Z",
+    "nome": "Disponibilização no Diário da Justiça Eletrônico",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 92,
+    "dataHora": "2021-10-13T00:57:43.000Z",
+    "nome": "Publicação",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2021-11-03T12:47:18.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 49,
+      "nome": "Embargos de declaração"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2022-04-23T16:04:30.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 57,
+      "nome": "Petição (outras)"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 51,
+    "dataHora": "2023-01-10T18:18:11.000Z",
+    "nome": "Conclusão",
+    "complementosTabelados": [
+     {
+      "codigo": 3,
+      "descricao": "tipo_de_conclusao",
+      "valor": 6,
+      "nome": "para decisão"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2023-01-25T01:34:47.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2023-03-23T20:25:11.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 57,
+      "nome": "Petição (outras)"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 123,
+    "dataHora": "2023-10-24T11:32:56.000Z",
+    "nome": "Remessa",
+    "complementosTabelados": [
+     {
+      "codigo": 18,
+      "descricao": "motivo_da_remessa",
+      "valor": 38,
+      "nome": "em grau de recurso"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2024-05-29T12:10:32.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2024-07-08T08:27:17.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 57,
+      "nome": "Petição (outras)"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 51,
+    "dataHora": "2024-07-16T23:09:25.000Z",
+    "nome": "Conclusão",
+    "complementosTabelados": [
+     {
+      "codigo": 3,
+      "descricao": "tipo_de_conclusao",
+      "valor": 6,
+      "nome": "para decisão"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2024-07-18T13:53:45.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2024-07-31T22:36:20.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 57,
+      "nome": "Petição (outras)"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 51,
+    "dataHora": "2024-08-02T13:20:12.000Z",
+    "nome": "Conclusão",
+    "complementosTabelados": [
+     {
+      "codigo": 3,
+      "descricao": "tipo_de_conclusao",
+      "valor": 6,
+      "nome": "para decisão"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-08-21T14:05:37.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2024-08-26T08:40:50.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2024-08-26T13:52:02.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2024-09-11T23:10:30.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 57,
+      "nome": "Petição (outras)"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 51,
+    "dataHora": "2024-09-19T08:04:32.000Z",
+    "nome": "Conclusão",
+    "complementosTabelados": [
+     {
+      "codigo": 3,
+      "descricao": "tipo_de_conclusao",
+      "valor": 6,
+      "nome": "para decisão"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2024-11-22T13:08:14.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2025-02-04T09:19:49.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 57,
+      "nome": "Petição (outras)"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 51,
+    "dataHora": "2025-02-04T09:19:55.000Z",
+    "nome": "Conclusão",
+    "complementosTabelados": [
+     {
+      "codigo": 3,
+      "descricao": "tipo_de_conclusao",
+      "valor": 36,
+      "nome": "para julgamento"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2025-02-04T13:56:30.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 85,
+    "dataHora": "2025-02-19T21:12:55.000Z",
+    "nome": "Petição",
+    "complementosTabelados": [
+     {
+      "codigo": 19,
+      "descricao": "tipo_de_peticao",
+      "valor": 57,
+      "nome": "Petição (outras)"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 848,
+    "dataHora": "2025-03-11T09:58:43.000Z",
+    "nome": "Trânsito em julgado",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 123,
+    "dataHora": "2025-05-11T02:47:54.000Z",
+    "nome": "Remessa",
+    "complementosTabelados": [
+     {
+      "codigo": 18,
+      "descricao": "motivo_da_remessa",
+      "valor": 40,
+      "nome": "outros motivos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 123,
+    "dataHora": "2025-05-15T14:59:49.000Z",
+    "nome": "Remessa",
+    "complementosTabelados": [
+     {
+      "codigo": 18,
+      "descricao": "motivo_da_remessa",
+      "valor": 40,
+      "nome": "outros motivos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2025-05-15T16:23:28.000Z",
+    "nome": "Documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 980,
+    "dataHora": "2025-05-15T16:23:29.000Z",
+    "nome": "Remessa",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2025-05-16T16:45:55.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2025-06-19T03:52:06.000Z",
+    "nome": "Documento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 60,
+    "dataHora": "2025-06-23T16:19:38.000Z",
+    "nome": "Expedição de documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 1061,
+    "dataHora": "2025-06-25T03:30:13.000Z",
+    "nome": "Disponibilização no Diário da Justiça Eletrônico",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 92,
+    "dataHora": "2025-06-25T03:30:16.000Z",
+    "nome": "Publicação",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 1051,
+    "dataHora": "2025-07-24T16:20:56.000Z",
+    "nome": "Decurso de Prazo",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2025-08-05T17:13:42.000Z",
+    "nome": "Documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 581,
+    "dataHora": "2025-08-05T17:14:14.000Z",
+    "nome": "Documento",
+    "complementosTabelados": [
+     {
+      "codigo": 4,
+      "descricao": "tipo_de_documento",
+      "valor": 80,
+      "nome": "Outros documentos"
+     }
+    ],
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 493,
+    "dataHora": "2014-09-23T17:38:25.000Z",
+    "nome": "Entrega em carga/vista",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 493,
+    "dataHora": "2014-09-25T13:59:01.000Z",
+    "nome": "Entrega em carga/vista",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12164,
+    "dataHora": "2014-09-26T16:31:18.000Z",
+    "nome": "Outras Decisões",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 493,
+    "dataHora": "2014-10-08T14:25:52.000Z",
+    "nome": "Entrega em carga/vista",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 493,
+    "dataHora": "2015-07-27T12:43:03.000Z",
+    "nome": "Entrega em carga/vista",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 493,
+    "dataHora": "2016-01-18T13:10:57.000Z",
+    "nome": "Entrega em carga/vista",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 493,
+    "dataHora": "2016-01-19T12:58:42.000Z",
+    "nome": "Entrega em carga/vista",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12215,
+    "dataHora": "2016-01-22T14:35:53.000Z",
+    "nome": "Processo devolvido à Secretaria",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 493,
+    "dataHora": "2016-01-22T15:03:53.000Z",
+    "nome": "Entrega em carga/vista",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 246,
+    "dataHora": "2016-08-24T13:39:08.000Z",
+    "nome": "Definitivo",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 893,
+    "dataHora": "2016-09-29T16:32:16.000Z",
+    "nome": "Desarquivamento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 246,
+    "dataHora": "2016-09-29T16:32:43.000Z",
+    "nome": "Definitivo",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11383,
+    "dataHora": "2021-10-07T14:00:16.000Z",
+    "nome": "Ato ordinatório",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11383,
+    "dataHora": "2021-10-07T14:02:32.000Z",
+    "nome": "Ato ordinatório",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 132,
+    "dataHora": "2021-10-07T14:07:26.000Z",
+    "nome": "Recebimento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 893,
+    "dataHora": "2022-01-07T13:56:50.000Z",
+    "nome": "Desarquivamento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11383,
+    "dataHora": "2022-03-29T11:03:07.000Z",
+    "nome": "Ato ordinatório",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 200,
+    "dataHora": "2023-01-17T15:15:12.000Z",
+    "nome": "Não-Acolhimento de Embargos de Declaração",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11383,
+    "dataHora": "2023-10-24T11:31:17.000Z",
+    "nome": "Ato ordinatório",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 849,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Reativação",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12315,
+    "dataHora": "2024-05-28T19:23:05.000Z",
+    "nome": "Devolvidos os autos",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11383,
+    "dataHora": "2024-05-29T12:09:36.000Z",
+    "nome": "Ato ordinatório",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12265,
+    "dataHora": "2024-05-29T12:10:32.000Z",
+    "nome": "Expedida/certificada",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11010,
+    "dataHora": "2024-07-18T13:53:45.000Z",
+    "nome": "Mero expediente",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12265,
+    "dataHora": "2024-07-18T13:53:46.000Z",
+    "nome": "Expedida/certificada",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12265,
+    "dataHora": "2024-08-26T13:52:03.000Z",
+    "nome": "Expedida/certificada",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11010,
+    "dataHora": "2024-11-22T13:08:14.000Z",
+    "nome": "Mero expediente",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12265,
+    "dataHora": "2024-11-22T13:08:15.000Z",
+    "nome": "Expedida/certificada",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 196,
+    "dataHora": "2025-02-04T13:56:30.000Z",
+    "nome": "Extinção da execução ou do cumprimento da sentença",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 12265,
+    "dataHora": "2025-02-04T13:56:31.000Z",
+    "nome": "Expedida/certificada",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 246,
+    "dataHora": "2025-02-04T13:56:37.000Z",
+    "nome": "Definitivo",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 893,
+    "dataHora": "2025-02-19T21:12:56.000Z",
+    "nome": "Desarquivamento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 246,
+    "dataHora": "2025-03-11T09:59:12.000Z",
+    "nome": "Definitivo",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 132,
+    "dataHora": "2025-05-11T02:47:54.000Z",
+    "nome": "Recebimento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 979,
+    "dataHora": "2025-05-15T14:59:49.000Z",
+    "nome": "Recebimento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 132,
+    "dataHora": "2025-05-15T16:23:29.000Z",
+    "nome": "Recebimento",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   },
+   {
+    "codigo": 11383,
+    "dataHora": "2025-07-31T14:09:32.000Z",
+    "nome": "Ato ordinatório",
+    "orgaoJulgador": {
+     "codigo": "7303",
+     "nome": "Quarta Vara - Comarca de Primavera do Leste - SDCR"
+    }
+   }
+  ]
+ }
+}

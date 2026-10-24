@@ -1,0 +1,808 @@
+// DDL — doc 09 (schema public) + ajuste dos models Osint ao CONTRATO congelado
+// (packages/shared/src/investiga-types.ts, doc 13 §4) para round-trip exato do
+// PrismaStore (plano.md §6.1).
+// Regras: PII em AES-256-GCM (bytes) · ids uuid · cents como int · RLS via migration SQL.
+// Timestamps de domínio do Investiga são ISO-8601 em TEXTO: o contrato DTO usa
+// string e a porta InvestigaStore faz round-trip sem transformação (ver
+// test/store-contract.test.ts).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  tgUserId      BigInt   @unique
+  username      String?  @db.VarChar(64)
+  firstName     String?
+  lastNameInitial String? @db.Char(1)
+  phoneE164Enc  Bytes?
+  emailEnc      Bytes?
+  uf            String   @db.Char(2)
+  cityIbge      Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  // 
+  investigaTrialUsedAt DateTime?
+  consents      UserConsent[]
+}
+
+model UserConsent {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id])
+  kind       String    // termos | lgpd_biometria | lgpd_dados | comunicacao_marketing
+  version    String
+  docSha256  String    @db.VarChar(64)
+  granted    Boolean
+  grantedAt  DateTime  @default(now())
+  revokedAt  DateTime?
+  ip         String?   @db.Inet
+  userAgent  String?
+
+  @@index([userId, kind])
+}
+
+model Plan {
+  code              String  @id @db.VarChar(20)
+  name              String
+  priceMonthlyCents Int
+  priceYearlyCents  Int
+  waQuota           Int
+  features          Json
+  active            Boolean @default(true)
+}
+
+model Payment {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.VarChar(64) // subjectId = tg id (sem FK: onboarding pode não existir ainda)
+  refType         String    // subscription | avulso | boost | contrato_extra | pacote_wa
+  refId           String?   @db.Uuid
+  amountCents     Int
+  currency        String    // BRL | XTR
+  channel         String    // pushinpay | stars
+  providerId      String    @unique @db.VarChar(64) // normalizado lower (doc 08 §2)
+  providerStatus  String    // created | paid | expired | refunded
+  providerPayload Json?
+  idempotencyKey  String    @unique @db.VarChar(64)
+  confirmedAt     DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+model Subscription {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.VarChar(64)
+  planCode    String    @db.VarChar(20)
+  channel     String
+  startsAt    DateTime
+  endsAt      DateTime
+  autoRenew   String    // pix_automatico | stars_30d | none
+  providerRef String?
+  status      String    // trial | active | past_due | cancelled
+}
+
+model AdminUser {
+  id              String   @id @default(uuid()) @db.Uuid
+  email           String   @unique
+  name            String
+  role            String   // diretor | admin_ops | operador_suporte | operador_mod | analista_financeiro | auditor | suporte_oab
+  passwordHash    String?  @db.VarChar(255)
+  totpSecretEnc   Bytes?
+  webauthnRequired Boolean @default(false)
+  ipAllowlist     Json?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  actorId   String?  @db.Uuid
+  actorRole String?  @db.VarChar(32) // participa do hash — sem ele a cadeia não fecha
+  action    String
+  target    String?
+  before    Json?
+  after     Json?
+  ip        String?  @db.Inet
+  device    String?
+  ts        DateTime @default(now())
+  prevHash  String?  @db.VarChar(64)
+  hash      String   @db.VarChar(64)
+
+  @@index([ts])
+}
+
+model RulesConfig {
+  id          BigInt   @id @default(autoincrement())
+  scope       String
+  key         String
+  valueJson   Json
+  version     Int
+  approvedBy  String?  @db.Uuid
+  effectiveAt DateTime
+  rollbackOf  BigInt?
+
+  @@unique([scope, key, version])
+}
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  payload   Json?
+  updatedBy String?  @db.Uuid
+  updatedAt DateTime @updatedAt
+}
+
+// ————— Investiga (doc 11) — models alinhados ao DTO congelado (doc 13 §4) —————
+// Round-trip exato: PrismaStore devolve os MESMOS objetos que OsintStore.
+// subjectId = id do dono (opaco; isolamento em service.requireOwnCase).
+
+model OsintCase {
+  id         String   @id @default(uuid()) @db.Uuid
+  subjectId  String   @db.VarChar(64)
+  title      String   @db.VarChar(120)
+  status     String   @db.VarChar(20) // draft|queued|running|completed|archived|error
+  targets    Json     // OsintTarget[]
+  legalBasis String
+  purpose    String
+  createdBy  String   @db.VarChar(64)
+  createdAt  String   @db.Text // ISO-8601
+  updatedAt  String   @db.Text
+  checks     OsintCheck[]
+  alerts     OsintAlert[]
+
+  @@index([subjectId, createdAt])
+}
+
+model OsintCheck {
+  id             String   @id @default(uuid()) @db.Uuid
+  caseId         String   @db.Uuid
+  case           OsintCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  target         Json     // OsintTarget
+  legalBasis     String
+  purpose        String
+  quotaConsumed  Int      @default(1)
+  status         String   @db.VarChar(20) // queued|running|completed|error
+  executedAt     String   @db.Text
+  error          String?
+  findings       OsintFinding[]
+
+  @@index([caseId])
+}
+
+model OsintFinding {
+  seq       BigInt   @default(autoincrement())
+  id        String    @id @default(uuid()) @db.Uuid
+  checkId     String?   @db.Uuid
+  check       OsintCheck? @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  caseId      String?   @db.Uuid // inferências (correlação) são do caso
+  sourceId    String    @db.VarChar(40)
+  status      String    @db.VarChar(20) // found|not_found|unknown|unavailable|error
+  summary     String?
+  evidenceUrl String?
+  retrievedAt String    @db.Text
+  raw         Json?
+  confidence  Json?     // FindingConfidence
+  inference   Boolean?
+
+  @@index([checkId])
+  @@index([caseId])
+  @@index([sourceId, status])
+}
+
+model OsintAlert {
+  id        String   @id @default(uuid()) @db.Uuid
+  caseId    String   @db.Uuid
+  case      OsintCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  kind      String   @db.VarChar(24) // new_finding|finding_disappeared|status_changed|stale
+  sourceId  String   @db.VarChar(40)
+  targetKey String   @db.VarChar(320)
+  detail    String
+  createdAt String   @db.Text
+  raw       Json?
+
+  @@index([caseId, createdAt])
+}
+
+// ————— Assessoria jurídica (doc 07 §2 · RF-B) —————
+
+model LegalCase {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.VarChar(64)
+  cnj       String   @db.VarChar(25) // NNNNNNN-DD.AAAA.J.TR.OOOO
+  role      String   @db.VarChar(20) // ativo | passivo | outro
+  oab       String?  @db.VarChar(20) // monitor por OAB (JUR-6) — registro verificado
+  alias     String?  @db.VarChar(40) // alias DataJud derivado do TR (RF-B02)
+  sigilo    Int      @default(0)     // >0 = "processo sigiloso — dados limitados" (RB3)
+  notes     String?
+  grau          String  @default("")
+  classe        String  @default("(não consultado)")
+  assunto       String?
+  orgaoJulgador String  @default("(não consultado)")
+  orgaoCodigo   Int?
+  municipioIbge Int?
+  dataAjuizamento String?
+  valorDaCausa  Int?
+  status        String  @default("desconhecido")
+  tribunal      String  @default("")
+  ultimoMovimento Json?
+  movimentosCount Int   @default(0)
+  fieldStatus   String  @default("pendente")
+  raw           Json?
+  createdAt String   @db.Text
+  updatedAt String   @db.Text
+  events    LegalEvent[]
+  advices   LegalAdvice[]
+
+  @@unique([userId, cnj]) // RB1 — chave única por usuário
+  @@index([userId, alias])
+}
+
+model LegalEvent {
+  id          BigInt    @id @default(autoincrement())
+  caseId      String    @db.Uuid
+  case        LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  source      String    @db.VarChar(10) // datajud | djen | dou
+  code        String?   @db.VarChar(20) // código do movimento
+  occurredAt  String    @db.Text
+  description String
+  raw         Json?
+  dedupeHash  String    @unique @db.VarChar(64) // RB5 — hash(numeroProcesso+codigoMovimento+dataHora)
+  retificado  Boolean   @default(false)         // RB2 — append-only; correção = novo registro
+  createdAt   String    @db.Text
+
+  @@index([caseId, occurredAt])
+}
+
+model LegalAdvice {
+  id          String   @id @default(uuid()) @db.Uuid
+  caseId      String?  @db.Uuid
+  case        LegalCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  userId      String   @db.VarChar(64)
+  question    String
+  answer      String?
+  oabUser     String?  @db.VarChar(64) // advogado com OAB verificada (RF-B07)
+  pdfSha256   String?  @db.VarChar(64)
+  status      String   @db.VarChar(20) // solicitado | agendado | respondido
+  scheduledAt String?
+  createdAt   String   @db.Text
+
+  @@index([userId])
+}
+
+// ————— Concursos (doc 07 §3 · RF-D) —————
+
+model Contest {
+  id            String   @id @default(uuid()) @db.Uuid
+  externalId    String   @unique @db.VarChar(160) // hash(órgão+banca+ano+nº) (RD2)
+  title         String
+  organ         String
+  banca         String?  @db.VarChar(40)
+  uf            String?  @db.Char(2)
+  cityIbge      Int?
+  status        String   @db.VarChar(24) // previsto|autorizado|edital_publicado|inscricoes_abertas|homologado
+  salaryCents   BigInt?
+  level         String?
+  sourceUrl     String   // link da publicação oficial (RD4)
+  inscricoesFrom String?
+  inscricoesTo   String?
+  provaAt        String?
+  fieldStatus   String   @default("pendente") @db.VarChar(12) // RD3 — vagas/salário pendente|validado
+  parentVersion String?  @db.VarChar(160) // RD2 — FK de negócio → Contest.externalId; retificação vincula versão, nunca substitui
+  raw           Json?
+  createdAt     String   @db.Text
+  updatedAt     String   @db.Text
+  alerts        ContestAlert[]
+
+  @@index([uf, status])
+}
+
+model ContestAlert {
+  id         String   @id @default(uuid()) @db.Uuid
+  contestId  String   @db.VarChar(160) // chave de negócio RD2 (externalId)
+  contest    Contest  @relation(fields: [contestId], references: [externalId], onDelete: Cascade)
+  userId     String   @db.VarChar(64)
+  kind       String   @db.VarChar(24) // novo_edital | prazo_inscricao | retificacao | resultado
+  sentAt     String   @db.Text
+  read       Boolean  @default(false)
+
+  @@index([userId, sentAt])
+}
+
+// ————— Licitações (doc 07 §3 · RF-C) —————
+
+model Tender {
+  id                String   @id @default(uuid()) @db.Uuid
+  pncpId            String   @unique @db.VarChar(80) // pncp:{cnpjOrgao}:{ano}:{sequencial} (RC1)
+  numeroControlePncp String  @unique @db.VarChar(80)
+  uasg              String?  @db.VarChar(20)
+  title             String
+  organ             String
+  modality          Int?
+  uf                String?  @db.Char(2)
+  cityIbge          Int?
+  status            String?  @db.VarChar(24)
+  budgetCents       BigInt?
+  propostaFrom      String?
+  propostaTo        String?
+  sourceUrl         String?  // link oficial = campo REAL da API (RC4)
+  raw               Json?
+  createdAt    String   @db.Text
+  updatedAt    String   @db.Text
+  matches      TenderMatch[]
+
+  @@index([uf, status])
+  @@index([propostaTo])
+}
+
+model TenderMatch {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenderId   String   @db.VarChar(80) // chave de negócio RC1 (pncpId), não o uuid interno
+  tender     Tender   @relation(fields: [tenderId], references: [pncpId], onDelete: Cascade)
+  userId     String   @db.VarChar(64)
+  filterName String   @db.VarChar(80)
+  matchScore Int      @default(0)
+  notifiedAt String?
+  createdAt  String   @db.Text
+
+  @@index([userId, createdAt])
+}
+
+// Filtros salvos ("meu radar") de licitações e concursos (RF-C03/RF-D04).
+model UserInterest {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.VarChar(64)
+  kind      String   @db.VarChar(12) // licitacao | concurso
+  name      String   @db.VarChar(80)
+  filters   Json
+  active    Boolean  @default(true)
+  createdAt String   @db.Text
+
+  @@index([userId, kind])
+}
+
+// ————— Empréstimos / Caderno de Dívidas (doc 06 · RF-E) —————
+
+model LoanRequest {
+  id              String   @id @db.VarChar(64)
+  userId          String   @db.VarChar(64) // dono — nunca vai no card
+  amountCents     Int
+  purpose         String
+  termMonths      Int?
+  maxInterestBps  Int?
+  jurosTipo       String   @db.VarChar(12) // simples | compostos
+  correction      String?
+  uf              String?  @db.Char(2)
+  cityIbge        Int?
+  status          String   @db.VarChar(20) // aberta | em_match | fechada | cancelada
+  avisoUsura      String?
+  createdAt       String   @db.Text
+
+  @@index([status, uf])
+}
+
+model LoanOffer {
+  id                 String   @id @default(uuid()) @db.Uuid
+  lenderUserId       String   @db.VarChar(64)
+  ticketMinCents     Int
+  ticketMaxCents     Int
+  purposes           Json?
+  radiusKm           Int?
+  monthlyCapitalCents Int?
+  uf                 String?  @db.Char(2)
+  cityIbge           Int?
+  status             String   @db.VarChar(20)
+  createdAt          String   @db.Text
+}
+
+model LoanMatch {
+  id            String   @id @db.VarChar(64)
+  requestId     String   @db.VarChar(64)
+  offerUserId   String   @db.VarChar(64) // credor
+  requestUserId String   @db.VarChar(64) // devedor
+  score         Int      @default(0)
+  scoreBreakdown Json?
+  rodadas       Int      @default(0)
+  status        String   @db.VarChar(20) // pendente | aceito | recusado | expirado
+  expiresAt     String   @db.Text // 72 h (MATCH_CHAT_HOURS)
+  createdAt     String   @db.Text
+  events        LoanMatchEvent[]
+  negotiations  LoanNegotiation[]
+
+  @@index([requestId])
+  @@index([requestUserId])
+  @@index([offerUserId])
+}
+
+model LoanMatchEvent {
+  id       BigInt   @id @default(autoincrement())
+  matchId  String   @db.VarChar(64)
+  match    LoanMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  type     String   @db.VarChar(24) // interesse | passar | contraproposta | acordo
+  fromUserId String @db.VarChar(64)
+  payload  Json?
+  createdAt String  @db.Text
+}
+
+model LoanNegotiation {
+  id          BigInt   @id @default(autoincrement())
+  matchId     String   @db.VarChar(64)
+  match       LoanMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  round       Int      // 1..3 (NEGOTIATION_ROUNDS)
+  proposedBy  String   @db.VarChar(64)
+  payload     Json?
+  createdAt   String   @db.Text
+
+  @@unique([matchId, round])
+}
+
+model Loan {
+  id             String   @id @default(uuid()) @db.Uuid
+  creditorUserId String   @db.VarChar(64)
+  debtorUserId   String?  @db.VarChar(64) // NULL = só o devedor coletado (primo)
+  debtorName     String?
+  amountCents    Int
+  interestBps    Int      @default(0)
+  correction     String   @default("none") // ipca | igpm | fixa | none
+  moraBps        Int      @default(0)
+  status         String   @db.VarChar(20) // ativo | quitado | inadimplente | cancelado
+  contractSha256 String?  @db.VarChar(64) // RE4
+  signedAt       String?
+  createdAt      String   @db.Text
+  installments   LoanInstallment[]
+  payments       LoanPayment[]
+  evidences      LoanEvidence[]
+  ledger         LoanLedger[]
+
+  @@index([creditorUserId, status])
+}
+
+model LoanInstallment {
+  id         String   @id @default(uuid()) @db.Uuid
+  loanId     String   @db.Uuid
+  loan       Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  seq        Int
+  dueDate    String   @db.Text
+  amountCents Int
+  status     String   @db.VarChar(20) // aberta | paga | parcial | atrasada
+  paidAt     String?
+
+  @@unique([loanId, seq])
+}
+
+model LoanPayment {
+  id            String   @id @default(uuid()) @db.Uuid
+  loanId        String   @db.Uuid
+  loan          Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  installmentId String?  @db.Uuid
+  amountCents   Int
+  declaredBy    String   @db.VarChar(64)
+  declaredAt    String   @db.Text
+  confirmedAt   String?
+  status        String   @db.VarChar(20) // declared | confirmed | disputed (TTL 72 h)
+
+  @@index([loanId])
+}
+
+model LoanEvidence {
+  id        String   @id @default(uuid()) @db.Uuid
+  loanId    String   @db.Uuid
+  loan      Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  type      String   @db.VarChar(24) // selfie_doc | contrato | comprovante | recibo
+  ref       String
+  sha256    String?  @db.VarChar(64)
+  createdAt String   @db.Text
+}
+
+model LoanLedger {
+  id       BigInt   @id @default(autoincrement())
+  loanId   String   @db.Uuid
+  loan     Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  event    String   @db.VarChar(40)
+  payload  Json?
+  createdAt String  @db.Text
+
+  @@index([loanId])
+}
+
+model PaymentConfirmation {
+  id             String   @id @default(uuid()) @db.Uuid
+  loanId         String   @db.Uuid
+  installmentId  String?  @db.Uuid
+  declaredBy     String   @db.VarChar(64)
+  confirmedBy    String?  @db.VarChar(64)
+  status         String   @db.VarChar(20) // declared | confirmed | disputed
+  declaredAt     String   @db.Text
+  decidedAt      String?
+
+  @@index([loanId])
+}
+
+model Dispute {
+  id        String   @id @default(uuid()) @db.Uuid
+  loanId    String   @db.Uuid
+  paymentId String?  @db.Uuid
+  openedBy  String   @db.VarChar(64)
+  reason    String
+  status    String   @db.VarChar(20) // open | resolved
+  createdAt String   @db.Text
+}
+
+model EnforcementAction {
+  id        BigInt   @id @default(autoincrement())
+  loanId    String   @db.Uuid
+  action    String   @db.VarChar(40) // d1_lembrete ... d90_blacklist (doc 06)
+  step      Int?
+  createdAt String   @db.Text
+
+  @@index([loanId])
+}
+
+model LoanLadder {
+  userId    String   @id @db.VarChar(64)
+  level     String   @db.Char(2) // E1..E5 (A4) — todo mundo começa em E1
+  updatedAt String   @db.Text
+}
+
+model HeatAlert {
+  id         BigInt   @id @default(autoincrement())
+  userId     String?  @db.VarChar(64)
+  loanId     String?  @db.Uuid
+  type       String   @db.VarChar(40)
+  detectedAt String   @db.Text
+  payload    Json?
+}
+
+model PayerTag {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @db.VarChar(64)
+  tag       String   @db.VarChar(24)
+  createdAt String   @db.Text
+
+  @@index([userId])
+}
+
+model Blacklist {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.VarChar(64)
+  cpfHash   String   @db.VarChar(64)
+  reason    String
+  proofRef  String?
+  reviewedBy String? @db.VarChar(64)
+  createdAt String   @db.Text
+  removedAt String?
+}
+
+// ————— Infra compartilhada (doc 03 §7 · doc 07 §4) —————
+
+model AlertEvent {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @db.VarChar(64)
+  topic     String   @db.VarChar(40) // processos | licitacoes | concursos | emprestimos | investiga | financeiro
+  refId     String?
+  channel   String   @db.VarChar(12) // telegram | email
+  status    String   @db.VarChar(12) // queued | delivered | read | silenced
+  payload   Json?
+  dedupeKey String?  @unique @db.VarChar(200) // RB — janela de dedupe (user|kind|ref|janela)
+  createdAt String   @db.Text
+
+  @@index([userId, topic, createdAt])
+}
+
+model RegionPack {
+  uf           String   @id @db.Char(2)
+  datajudAlias String   @db.VarChar(40)
+  djenEnabled  Boolean  @default(true)
+  diarios      Json
+  updatedAt    String   @db.Text
+}
+
+model SyncRun {
+  id         BigInt   @id @default(autoincrement())
+  source     String   @db.VarChar(24) // datajud | djen | pncp | dou | querido | bancas
+  region     String?
+  startedAt  String   @db.Text
+  finishedAt String?
+  status     String   @db.VarChar(12) // running | ok | error
+  error      String?
+  items      Int      @default(0)
+
+  @@index([source, startedAt])
+}
+
+model JobsDeadletter {
+  id        BigInt   @id @default(autoincrement())
+  queue     String
+  payload   Json
+  error     String
+  retriedAt String?
+  createdAt String   @db.Text
+}
+
+// ————— AnotA (finanças pessoais — plano anota) —————
+
+model Nota {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.VarChar(64)
+  title     String   @db.VarChar(200)
+  body      String   @db.Text
+  tags      Json?
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model Gasto {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.VarChar(64)
+  amountCents Int
+  category    String   @db.VarChar(40)
+  description String   @db.VarChar(300)
+  spentAt     DateTime
+  photoRef    String?  @db.VarChar(200)
+  ocrText     String?  @db.Text
+  ocrEngine   String?  @db.VarChar(30) // manual | tesseract | api:<nome>
+  createdAt   DateTime @default(now())
+
+  @@index([userId, spentAt])
+}
+
+// ————— Filtros salvos (licitações + concursos) —————
+
+model UserFilter {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.VarChar(64)
+  product   String   @db.VarChar(20) // licitacao | concurso
+  name      String   @db.VarChar(80)
+  query     Json
+  createdAt DateTime @default(now())
+
+  @@unique([userId, product, name])
+}
+
+// ————— Verificação de identidade (V1..V4) + sinais de confiança —————
+
+model UserVerification {
+  userId       String    @id @db.VarChar(64)
+  v1Status     String    @default("none") // none | pending | approved | rejected
+  v2Status     String    @default("none")
+  v3Status     String    @default("none")
+  v4Status     String    @default("none")
+  selfieAt     DateTime?
+  docTipo      String?   @db.VarChar(30)
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  rejectReason String?   @db.VarChar(300)
+  updatedAt    DateTime  @updatedAt
+}
+
+model TrustSignal {
+  id     BigInt @id @default(autoincrement())
+  userId String @db.VarChar(64)
+  kind   String @db.VarChar(20) // serasa | device | tempo_conta | assinatura | pagamento
+  value  Int
+  at     String
+
+  @@index([userId])
+}
+
+// ————— Entitlements (SKUs de assinatura — S2 Prisma) —————
+
+model Entitlement {
+  subjectId   String    @id @db.VarChar(64)
+  skus        Json      // string[]
+  expiresAt   DateTime?
+  trialUsedAt DateTime?
+  grantedVia  String?   @db.VarChar(20) // pushinpay | stars | trial | manual
+  updatedAt   DateTime  @updatedAt
+}
+
+// ————— Gamificação —————
+
+model GameProfile {
+  userId       String    @id @db.VarChar(64)
+  xp           Int       @default(0)
+  level        Int       @default(1)
+  streak       Int       @default(0)
+  lastActionAt DateTime?
+  ufOptIn      Boolean   @default(false)
+  updatedAt    DateTime  @updatedAt
+}
+
+model GameEvent {
+  id     BigInt   @id @default(autoincrement())
+  userId String   @db.VarChar(64)
+  action String   @db.VarChar(40)
+  xp     Int
+  at     DateTime @default(now())
+
+  @@index([userId, at])
+}
+
+model UserBadge {
+  id     BigInt   @id @default(autoincrement())
+  userId String   @db.VarChar(64)
+  badge  String   @db.VarChar(40)
+  at     DateTime @default(now())
+
+  @@unique([userId, badge])
+}
+
+model Mission {
+  code  String @id @db.VarChar(40)
+  title String @db.VarChar(120)
+  xp    Int
+  kind  String @db.VarChar(20) // daily | weekly
+}
+
+model UserMission {
+  id       BigInt  @id @default(autoincrement())
+  userId   String  @db.VarChar(64)
+  code     String  @db.VarChar(40)
+  progress Int     @default(0)
+  done     Boolean @default(false)
+  period   String  @db.VarChar(12) // dia/ISO-week
+
+  @@unique([userId, code, period])
+}
+
+// ————— Pagamento de MATCH (dupla confirmação RF-E06; o ciclo completo de
+// crédito usa PaymentConfirmation/Loan à parte) —————
+
+model MatchPayment {
+  id           String  @id @db.VarChar(64)
+  matchId      String  @db.VarChar(64)
+  valorCents   Int
+  declaredBy   String  @db.VarChar(64)
+  confirmadoPor String? @db.VarChar(64)
+  status       String  @db.VarChar(20) // declared | confirmed | disputed
+  declaredAt   String  @db.Text
+  ttlEm        String  @db.Text
+
+  @@index([matchId])
+}
+
+// ————— RB4: janela de consolidação por usuário-tribunal —————
+
+model ConsolidationWindow {
+  userId   String @db.VarChar(64)
+  tribunal String @db.VarChar(40)
+  at       String @db.Text
+
+  @@id([userId, tribunal])
+}
+
+// ————— Painel de operações (docs/plano-painel-ops.md §3.1) —————
+// VIDA/PROCESSOS: eventos duráveis do keep-alive, worker, deploys e testes.
+model OpsEvent {
+  id      BigInt   @id @default(autoincrement())
+  ts      DateTime @default(now())
+  source  String   @db.VarChar(16) // keep-alive | worker | deploy | test | manual | api
+  kind    String   @db.VarChar(32) // process_start | process_down | heal_* | twin_recreated | tunnel_new |
+                                   // health_fail | health_ok | alert_delivered | alert_failed | test_run |
+                                   // flag_change | url_change | purge
+  service String   @db.VarChar(16) // api | web | bot | tunnel | worker | app
+  ok      Boolean  @default(true)
+  detail  Json?
+
+  @@index([ts])
+  @@index([service, ts])
+}
+
+// SAÚDE: série de probes (15s ciclo; bot/túnel a cada 4 ciclos).
+model ServiceProbe {
+  id        BigInt   @id @default(autoincrement())
+  ts        DateTime @default(now())
+  service   String   @db.VarChar(16)
+  ok        Boolean
+  latencyMs Int?
+  detail    Json?
+
+  @@index([service, ts])
+  @@index([ts])
+}

@@ -1,0 +1,438 @@
+{
+ "_capture": {
+  "source": "DOU busca www.in.gov.br/consulta/-/buscar/dou",
+  "query": "\"concurso público\" (exata)",
+  "section": "do3",
+  "window": "01/10/2026..22/10/2026",
+  "capturedAt": "2026-10-23"
+ },
+ "jsonArray": [
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-de-convocacao-n-6/2026-739928454",
+   "numberPage": "155",
+   "title": "EDITAL DE CONVOCAÇÃO N° 6/2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL DE CONVOCAÇÃO N° 6/2026 <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> 01/2024 - CONFERE O Conselho Federal dos Representantes ... e e-mail, para apresentação e entrega da documentação prevista no item 3.4 do Anexo VI do Edital do <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> nº 01/2024 - Confere, junto ao setor competente, com vistas à formalização da contratação. ... atender à convocação no local e prazo acima indicado, munido de toda a documentação, será eliminado do <span class='highlight' style='background:#FFA;'>concurso</span> ... <span class='highlight' style='background:#FFA;'>público</span>.",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739928456",
+   "pubOrder": "DO300071:00056:00000:00000:00000:00000:00000:00000:00000:00000:00058:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Entidades de Fiscalização do Exercício das Profissões Liberais/Conselho Federal dos Representantes Comerciais",
+   "hierarchyList": [
+    "Entidades de Fiscalização do Exercício das Profissões Liberais",
+    "Conselho Federal dos Representantes Comerciais"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-8-de-21-de-outubro-de-2026-739928377",
+   "numberPage": "157",
+   "title": "EDITAL Nº 8, DE 21 DE OUTUBRO DE 2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL Nº 8, DE 21 DE OUTUBRO DE 2026 CONVOCAÇÃO DE CANDIDATOs APROVADOs EM <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> - EDITAL ... das atribuições que lhe são conferidas e tendo em vista o disposto no edital nº 1/2024, que rege o <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> Para Provimento de Vaga e Formação de Cadastro de Reserva Para Cargos de Nível Médio e Nível ... CONCORRÊNCIA. 1º - O CREFITO-18 convoca os candidatos abaixo relacionados, aprovados e classificados no <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> Edital nº EDITAL Nº 7/CREFITO18, DE 3 DE SETEMBRO DE 2026, Publicado em: 04/09/2026 | Edição",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital",
+   "classPK": "739928379",
+   "pubOrder": "DO300071:00343:00000:00000:00000:00000:00000:00000:00000:00000:00056:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Entidades de Fiscalização do Exercício das Profissões Liberais/CONSELHO REGIONAL DE FISIOTERAPIA E TERAPIA OCUPACIONAL DA 18 REGIÃO",
+   "hierarchyList": [
+    "Entidades de Fiscalização do Exercício das Profissões Liberais",
+    "CONSELHO REGIONAL DE FISIOTERAPIA E TERAPIA OCUPACIONAL DA 18 REGIÃO"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-1/2026-739927397",
+   "numberPage": "126",
+   "title": "EDITAL Nº 1/2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL Nº 1/2026 <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> PARA O PROVIMENTO DE CARGOS DO QUADRO PERMANENTE DE PESSOAL ABERTURA ... DAS DISPOSIÇÕES PRELIMINARES 1.1 O <span class='highlight' style='background:#FFA;'>Concurso Público</span> realizar-se-á sob a responsabilidade da Fundação ... DAS PROVAS 10.1 O <span class='highlight' style='background:#FFA;'>concurso público</span> constará das seguintes provas por Cargo/Área/Especialidade, número ... <span class='highlight' style='background:#FFA;'>Público</span>. 11.10 Objetivando garantir a lisura e a idoneidade do <span class='highlight' style='background:#FFA;'>Concurso Público</span> - o que é de interesse ... relativas ao resultado do <span class='highlight' style='background:#FFA;'>Concurso Público</span>. 20.11 Não serão fornecidos atestados, declarações, certificados",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital de Concurso Público",
+   "classPK": "739927399",
+   "pubOrder": "DO300070:00045:00001:00000:00000:00000:00000:00000:00000:00000:00059:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Poder Judiciário/Tribunal Regional do Trabalho da 4ª Região",
+   "hierarchyList": [
+    "Poder Judiciário",
+    "Tribunal Regional do Trabalho da 4ª Região"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-739925859",
+   "numberPage": "44",
+   "title": "EDITAL",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL PRORROGAÇÃO DE VALIDADE DE <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> PARA O MAGISTÉRIO SUPERIOR O REITOR EM EXERCÍCIO DA ... atribuições legais e estatutárias, torna pública a prorrogação, por mais 2 (dois) anos, da validade do <span class='highlight' style='background:#FFA;'>concurso</span> ... <span class='highlight' style='background:#FFA;'>público</span> para o Magistério Superior referente ao edital e às áreas de conhecimento abaixo discriminados",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Aviso",
+   "classPK": "739925861",
+   "pubOrder": "DO300025:00105:00000:00000:00000:00000:00000:00000:00000:00000:00107:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Ministério da Educação/Universidade Federal Fluminense",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Universidade Federal Fluminense"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-de-21-de-outubro-de-2026-739917051",
+   "numberPage": "35",
+   "title": "EDITAL DE 21 DE OUTUBRO DE 2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL DE 21 DE OUTUBRO DE 2026 CONVOCAÇÃO DE CANDIDATO APROVADO EM <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> - Edital nº 2/2025 ... acordo com os subitens 12.18, 12.19, 12.20 e 12.21 do Edital nº 2/2025, que tornou pública a abertura do <span class='highlight' style='background:#FFA;'>concurso</span> ... <span class='highlight' style='background:#FFA;'>público</span> para o cargo de Professor de Ensino Básico, Técnico e Tecnológico, o(a) senhor(a) MANASSÉS GOMES",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739917053",
+   "pubOrder": "DO300025:00057:00001:00000:00000:00000:00000:00000:00000:00000:00058:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Ministério da Educação/Instituto Federal de Educação, Ciência e Tecnologia do Amazonas",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Instituto Federal de Educação, Ciência e Tecnologia do Amazonas"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-13/2026-739906595",
+   "numberPage": "117",
+   "title": "EDITAL Nº 13/2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL Nº 13/2026 33º <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> PARA INGRESSO NA CARREIRA DO MPDFT NO CARGO DE PROMOTOR DE JUSTIÇA ... - Tornar público o resultado final da 4ª Etapa - Prova Oral e da 5ª Etapa - Prova de Títulos do 33º <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> para ingresso na carreira do Ministério Público do Distrito Federal e Territórios, conforme ... V - Tornar público o resultado final do 33º <span class='highlight' style='background:#FFA;'>Concurso Público</span> para ingresso na carreira do Ministério",
+   "hierarchyLevelSize": 3,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital",
+   "classPK": "739906597",
+   "pubOrder": "DO300066:00007:00002:00000:00000:00000:00000:00000:00000:00000:00056:132026",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Ministério Público da União/Ministério Público do Distrito Federal e Territórios/Procuradoria-Geral de Justiça",
+   "hierarchyList": [
+    "Ministério Público da União",
+    "Ministério Público do Distrito Federal e Territórios",
+    "Procuradoria-Geral de Justiça"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "extrato-de-contrato-739889869",
+   "numberPage": "187",
+   "title": "EXTRATO DE CONTRATO",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "especializada para prestação de serviços técnicos de Planejamento, organização, coordenação e execução de <span class='highlight' style='background:#FFA;'>concurso</span> ... <span class='highlight' style='background:#FFA;'>público</span>, destinado ao provimento de cargos efetivos de níveis fundamental, médio e superior no âmbito de Contrato - Processo Administrativo Nº 00003.20261009/0001-04 - D...",
+   "hierarchyLevelSize": 3,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Extrato de Contrato",
+   "classPK": "739889916",
+   "pubOrder": "DO300075:00006:00051:00000:00000:00000:00000:00000:00000:00000:00030:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Prefeituras/Estado do Ceará/Prefeitura Municipal de Boa Viagem",
+   "hierarchyList": [
+    "Prefeituras",
+    "Estado do Ceará",
+    "Prefeitura Municipal de Boa Viagem"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-de-convocacao-739883235",
+   "numberPage": "154",
+   "title": "EDITAL DE CONVOCAÇÃO",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL DE CONVOCAÇÃO Tendo em vista sua aprovação no <span class='highlight' style='background:#FFA;'>Concurso Público</span> nº 001/2023 - CAU/PE, nos termos ... indicados, ou a não comprovação integral dos requisitos exigidos, implicará a eliminação do candidato do <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span>, sendo convocado, em seu lugar, o candidato subsequente, respeitada a ordem de classificação",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739883237",
+   "pubOrder": "DO300071:00018:00000:00000:00000:00000:00000:00000:00000:00000:00058:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Entidades de Fiscalização do Exercício das Profissões Liberais/Conselho de Arquitetura e Urbanismo de Pernambuco",
+   "hierarchyList": [
+    "Entidades de Fiscalização do Exercício das Profissões Liberais",
+    "Conselho de Arquitetura e Urbanismo de Pernambuco"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-739853959",
+   "numberPage": "123",
+   "title": "EDITAL",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "REGIÃO, por meio da Desembargadora Federal Gilda Sigmaringa Seixas, Presidente da Comissão do XVIII <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> para ingresso na carreira da magistratura da 1ª Região, no uso de suas atribuições e em cumprimentor meio da Desembargadora Federal Gilda Sigmaringa Seixas, Presidente...",
+   "hierarchyLevelSize": 3,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Aviso",
+   "classPK": "739853961",
+   "pubOrder": "DO300070:00007:00007:00000:00000:00000:00000:00000:00000:00000:00107:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Poder Judiciário/Tribunal Regional Federal da 1ª Região/Presidência da Comissão de Concurso",
+   "hierarchyList": [
+    "Poder Judiciário",
+    "Tribunal Regional Federal da 1ª Região",
+    "Presidência da Comissão de Concurso"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-203/2026-de-20-de-outubro-de-2026-739830893",
+   "numberPage": "56",
+   "title": "EDITAL Nº 203/2026, DE 20 de outubro de 2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL Nº 203/2026, DE 20 de outubro de 2026 Resultado Final <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> PARA PROVIMENTO DE VAGA ... termos da base legal indicada e da homologação pela unidade acadêmica, o Edital de Resultado Final de <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> de Provas e Prova de Títulos para o cargo de Professor de Magistério Superior, nas condições",
+   "hierarchyLevelSize": 3,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital",
+   "classPK": "739830895",
+   "pubOrder": "DO300025:00145:00022:00000:00000:00000:00000:00000:00000:00000:00056:2032026",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Ministério da Educação/Fundação Universidade de Brasília/Decanato de Gestão de Pessoas",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Fundação Universidade de Brasília",
+    "Decanato de Gestão de Pessoas"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-8-de-20-de-outubro-de-2026-739826367",
+   "numberPage": "155",
+   "title": "EDITAL Nº 8, DE 20 DE OUTUBRO DE 2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL Nº 8, DE 20 DE OUTUBRO DE 2026 <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> CRECI-DF 2025 CONVOCAÇÃO DE CANDIDATOS O Presidente ... uso de suas atribuições legais e regimentais, torna pública a convocação dos candidatos aprovados no <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> nº 001/2025, regido pelo Edital de Abertura do <span class='highlight' style='background:#FFA;'>Concurso Público</span> CRECI-DF n.º 001/2025, de 19",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739826369",
+   "pubOrder": "DO300071:00185:00000:00000:00000:00000:00000:00000:00000:00000:00058:00008",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Entidades de Fiscalização do Exercício das Profissões Liberais/Conselho Regional de Corretores de Imóveis da 8ª Região",
+   "hierarchyList": [
+    "Entidades de Fiscalização do Exercício das Profissões Liberais",
+    "Conselho Regional de Corretores de Imóveis da 8ª Região"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-de-20-de-outubro-2026-739796086",
+   "numberPage": "38",
+   "title": "EDITAL DE 20 DE OUTUBRO 2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL DE 20 DE OUTUBRO 2026 RETIFICAÇÃO Nº 9 DO EDITAL Nº 607, DE 31 DE AGOSTO DE 2026 <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span>NCURSO PÚBLICO DE PROVAS E TÍTULOS PARA O PROVIMENTO DOS CARGOS DA CARREIRA DO MAGISTÉRIO DO ENSINO BÁSICO, TÉCNICO E TECNOLÓGICO ANEXO I - CRONOGRAMA - Leia-se Reserva-se ao IFMG a prerrogativa de retificar o cronograma deste certame, de o...",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Retificação (de Edital)",
+   "classPK": "739796088",
+   "pubOrder": "DO300025:00071:00000:00000:00000:00000:00000:00000:00000:00000:00178:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Ministério da Educação/Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-9-de-21-de-outubro-de-2026-739793576",
+   "numberPage": "157",
+   "title": "EDITAL Nº 9, de 21 de outubro de 2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL Nº 9, de 21 de outubro de 2026 CONVOCAÇÃO DE CANDIDATOS APROVADOS EM <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> - EDITAL Nº 9, de 21 de outubro de 2026 CONVOCAÇÃO DE CANDIDATOS APROVADOS EM CONCURSO PÚBLICO - EDITAL Nº 1/2024 O Presidente do Conselho Regional de Fisioterapia e Terapia Ocupacional da 18ª Região, o Senhor Rodrigo Moreira Campos, no uso de suas at...",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital",
+   "classPK": "739793578",
+   "pubOrder": "DO300071:00343:00000:00000:00000:00000:00000:00000:00000:00000:00056:00009",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Entidades de Fiscalização do Exercício das Profissões Liberais/CONSELHO REGIONAL DE FISIOTERAPIA E TERAPIA OCUPACIONAL DA 18 REGIÃO",
+   "hierarchyList": [
+    "Entidades de Fiscalização do Exercício das Profissões Liberais",
+    "CONSELHO REGIONAL DE FISIOTERAPIA E TERAPIA OCUPACIONAL DA 18 REGIÃO"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-de-convocacao-n-24/2026-739772886",
+   "numberPage": "26",
+   "title": "EDITAL DE CONVOCAÇÃO Nº 24/2026",
+   "pubDate": "22/10/2026",
+   "editionNumber": "200",
+   "content": "EDITAL DE CONVOCAÇÃO Nº 24/2026 <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> AMAZUL /FUNDAÇÃO GETÚLIO VARGAS (FGV) O Gerente de Desenvolvimento ... DEFESA S.A. - AMAZUL, no uso de suas atribuições legais, torna pública a convocação de aprovados no <span class='highlight' style='background:#FFA;'>concurso</span> ... <span class='highlight' style='background:#FFA;'>público</span> homologado pelo Edital nº 01/2025, 03 de julho de 2026. 1. ... documentos exigidos para a contratação implicará na exclusão em caráter irrevogável e irretratável do <span class='highlight' style='background:#FFA;'>concurso</span> ... <span class='highlight' style='background:#FFA;'>público</span>.",
+   "hierarchyLevelSize": 3,
+   "displayDateSortable": "1792638000000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739772888",
+   "pubOrder": "DO300016:00012:00004:00000:00000:00000:00000:00000:00000:00000:00058:00000",
+   "displayDate": "20261022000000",
+   "hierarchyStr": "Ministério da Defesa/Comando da Marinha/Amazônia Azul Tecnologias de Defesa S.A.",
+   "hierarchyList": [
+    "Ministério da Defesa",
+    "Comando da Marinha",
+    "Amazônia Azul Tecnologias de Defesa S.A."
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-de-20-de-outubro-de-2026-739684053",
+   "numberPage": "119",
+   "title": "EDITAL DE 20 de outubro de 2026",
+   "pubDate": "21/10/2026",
+   "editionNumber": "199",
+   "content": "EDITAL DE 20 de outubro de 2026 11ª CONVOCAÇÃO REFERENTE AO EDITAL Nº 1/2025 TAES/UNIFESSPA <span class='highlight' style='background:#FFA;'>CONCURSO</span> ... <span class='highlight' style='background:#FFA;'>PÚBLICO</span> PARA PROVIMENTO DE CARGOS TÉCNICO-ADMINISTRATIVOS EM EDUCAÇÃO O Reitor da Universidade Federal ... <span class='highlight' style='background:#FFA;'>Público</span>; Convoca os(as) candidatos(as) listados(as) no Anexo II, a se manifestar, por escrito conforme ... A nomeação respeitará a ordem de classificação, na homologação do resultado final do referido <span class='highlight' style='background:#FFA;'>concurso</span> ... <span class='highlight' style='background:#FFA;'>Públicos</span>.",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792551600000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739684055",
+   "pubOrder": "DO300025:00135:00000:00000:00000:00000:00000:00000:00000:00000:00058:00000",
+   "displayDate": "20261021000000",
+   "hierarchyStr": "Ministério da Educação/Universidade Federal do Sul e Sudeste do Pará",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Universidade Federal do Sul e Sudeste do Pará"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-de-9-de-outubro-de-2026-739655751",
+   "numberPage": "115",
+   "title": "EDITAL DE 9 DE OUTUBRO DE 2026",
+   "pubDate": "21/10/2026",
+   "editionNumber": "199",
+   "content": "EDITAL DE 9 DE OUTUBRO DE 2026 <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> DE SELEÇÃO E ADMISSÃO - ANO LETIVO 2027.1 (CURSO DE MESTRADO ... dezembro de 2026, de 0h01 do dia 26 de outubro às 23h59 do dia 3 de dezembro de 2026, as inscrições para o <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> de Seleção e Admissão - Ano Letivo 2027.1 (Curso de Mestrado e Doutorado). ... Darlan Karlo Elisiário de Carvalho EDITAL DE 15 DE OUTUBRO DE 2026 <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> DE SELEÇÃO E ADMISSÃO ... <span class='highlight' style='background:#FFA;'>Público</span> de Seleção e Admissão - Ano Letivo 2027.1 (Curso de Mestrado).",
+   "hierarchyLevelSize": 3,
+   "displayDateSortable": "1792551600000",
+   "score": 0,
+   "artType": "Aviso",
+   "classPK": "739655753",
+   "pubOrder": "DO300025:00121:00015:00000:00000:00000:00000:00000:00000:00000:00107:00000",
+   "displayDate": "20261021000000",
+   "hierarchyStr": "Ministério da Educação/Universidade Federal de Pernambuco/Centro de Tecnologia e Geociências",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Universidade Federal de Pernambuco",
+    "Centro de Tecnologia e Geociências"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "extrato-de-contrato-n-173/2026-uasg-158139-739650648",
+   "numberPage": "99",
+   "title": "EXTRATO DE CONTRATO Nº 173/2026 - UASG 158139",
+   "pubDate": "21/10/2026",
+   "editionNumber": "199",
+   "content": "Objeto: Contratação de serviços técnico-especializados para realização de <span class='highlight' style='background:#FFA;'>concurso público</span> para seleçãocesso: 23317.005824/2026-55. Dispensa Nº 406/2026. Contratante: INST.FED.DE EDUC.,CIENC.E TEC.FLUMINENSE. Contratado: 12.667.012/0001-53 - INSTITUTO AOCP. Objeto: Contratação de serviços técnico-especializados para realização de concurso púb...",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792551600000",
+   "score": 0,
+   "artType": "Extrato de Contrato",
+   "classPK": "739650650",
+   "pubOrder": "DO300025:00065:00000:00000:00000:00000:00000:00000:00000:00000:00030:00001",
+   "displayDate": "20261021000000",
+   "hierarchyStr": "Ministério da Educação/Instituto Federal de Educação, Ciência e Tecnologia Fluminense",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Instituto Federal de Educação, Ciência e Tecnologia Fluminense"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-cro-sc-n-2/2026-739646008",
+   "numberPage": "269",
+   "title": "EDITAL CRO-SC Nº 2/2026",
+   "pubDate": "21/10/2026",
+   "editionNumber": "199",
+   "content": "EDITAL CRO-SC Nº 2/2026 CONVOCAÇÃO DE CANDIDATO APROVADO EM <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> - EDITAL Nº 1/2022 O Presidente ... de Odontologia de Santa Catarina, no uso de suas atribuições, considerando o anexo VI do Edital de <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> Nº 1/2022, CONVOCA o candidato aprovado no concurso e relacionado no Anexo I do presente Edital",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792551600000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739646010",
+   "pubOrder": "DO300071:00466:00000:00000:00000:00000:00000:00000:00000:00000:00058:00000",
+   "displayDate": "20261021000000",
+   "hierarchyStr": "Entidades de Fiscalização do Exercício das Profissões Liberais/Conselho Regional de Odontologia de Santa Catarina",
+   "hierarchyList": [
+    "Entidades de Fiscalização do Exercício das Profissões Liberais",
+    "Conselho Regional de Odontologia de Santa Catarina"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-245-de-20-de-outubro-de-2026-739640335",
+   "numberPage": "118",
+   "title": "EDITAL Nº 245, DE 20 DE OUTUBRO DE 2026",
+   "pubDate": "21/10/2026",
+   "editionNumber": "199",
+   "content": "EDITAL Nº 245, DE 20 DE OUTUBRO DE 2026 HOMOLOGAÇÃO DE <span class='highlight' style='background:#FFA;'>CONCURSO PÚBLICO</span> A REITORA DA UNIVERSIDADE FEDERAL ... Ensino, Pesquisa e Extensão na Sessão N. 1024, realizada em 16/10/2026, resolve divulgar que o seguinte <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> para Docente da Carreira do Magistério Superior foi homologado: Edital de Abertura de <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> UFSM N. 223, de 28 de agosto de 2025, publicado no DOU de 29 de agosto de 2025. ... <span class='highlight' style='background:#FFA;'>público</span> será de 01 (um) ano, a contar da publicação do resultado no Diário Oficial da União, e será",
+   "hierarchyLevelSize": 3,
+   "displayDateSortable": "1792551600000",
+   "score": 0,
+   "artType": "Edital",
+   "classPK": "739640337",
+   "pubOrder": "DO300025:00132:00022:00000:00000:00000:00000:00000:00000:00000:00056:00000",
+   "displayDate": "20261021000000",
+   "hierarchyStr": "Ministério da Educação/Universidade Federal de Santa Maria/Pró-Reitoria de Gestão de Pessoas",
+   "hierarchyList": [
+    "Ministério da Educação",
+    "Universidade Federal de Santa Maria",
+    "Pró-Reitoria de Gestão de Pessoas"
+   ]
+  },
+  {
+   "pubName": "DO3",
+   "urlTitle": "edital-n-1/2025-739636587",
+   "numberPage": "266",
+   "title": "EDITAL Nº 1/2025",
+   "pubDate": "21/10/2026",
+   "editionNumber": "199",
+   "content": "suas atribuições legais, torna pública a convocação dos candidatos abaixo relacionados, aprovados no <span class='highlight' style='background:#FFA;'>Concurso</span> ... <span class='highlight' style='background:#FFA;'>Público</span> regido pelo Edital nº 01/2025, homologado conforme publicação no Diário Oficial da União dente do Conselho Regional de Contabilidade do Estado de São Paulo - CRCSP, n...",
+   "hierarchyLevelSize": 2,
+   "displayDateSortable": "1792551600000",
+   "score": 0,
+   "artType": "Edital de Convocação",
+   "classPK": "739636589",
+   "pubOrder": "DO300071:00151:00000:00000:00000:00000:00000:00000:00000:00000:00058:00000",
+   "displayDate": "20261021000000",
+   "hierarchyStr": "Entidades de Fiscalização do Exercício das Profissões Liberais/Conselho Regional de Contabilidade de São Paulo",
+   "hierarchyList": [
+    "Entidades de Fiscalização do Exercício das Profissões Liberais",
+    "Conselho Regional de Contabilidade de São Paulo"
+   ]
+  }
+ ]
+}

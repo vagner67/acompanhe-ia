@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @acompanhe/web build",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }],
+  "functions": { "api/index.ts": { "memory": 1024, "maxDuration": 60 } }
+}
