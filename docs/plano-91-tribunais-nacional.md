@@ -332,3 +332,16 @@ GET  /auto  → esaj-al v2 · 1 versão gravada
 ```
 
 Ou seja: em produção o ciclo **mede vizinhos, encontra ganho, promove e grava**. A persistência é verificada na §10.6 (sobrevivência a restart).
+
+### 10.6 Persistência verificada por restart (deploy `e566966`)
+
+```
+após RESTART/DEPLOY — GET /auto
+  djen      v1  · 0 versões
+  esaj-sp   v1  · 0 versões
+  esaj-al   v2  paginas=4 · 1 versão   ← aprendido antes do restart, ainda vigente
+  esaj-ac   v1  · 0 versões
+  esaj-ce   v1  · 0 versões
+```
+
+O perfil promovido **sobreviveu ao redeploy**, provando que o aprendizado está no Postgres (`FontePerfil`) e não em memória. (A conexão externa ao Postgres free do Render estava recusando conexão a partir do sandbox — a verificação foi feita pelo caminho que importa: o app novo lendo o banco.)
