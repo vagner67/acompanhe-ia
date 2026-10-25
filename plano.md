@@ -350,3 +350,37 @@ O que continua **fora** (declarado, não simulado): `buscaIA`/`sherlock` como co
 do NCA; módulos `anota`, `pagamentos` e `operacao` (não têm fonte externa para medir);
 e o modo IA do diagnóstico, que hoje roda determinístico porque o ambiente não tem
 `AI_PROVIDER`/`AI_API_KEY`.
+
+### 9.9 IA de buscador finalmente respondendo no ciclo (25/10, com prova de execução)
+
+O §9.8 fechou com uma pendência honesta: o diagnóstico com IA **não respondia** (provedor
+gratuito devolvia `402 FREE_LIMIT`). Nesta rodada a camada foi destravada e medida em ciclo real
+de 15 coletores — sem dado simulado.
+
+**O que estava errado (tudo medido, nada suposto):**
+
+| Defeito | Evidência | Correção |
+|---|---|---|
+| Janela de 30 s contada do **início** da chamada | resposta do provedor levava ~11 s → a próxima caía 19 s depois e tomava 402 (`openai: limite gratuito`) | `ultimaChamadaIA` agora é gravado no `finally`: a janela conta do **fim** da resposta |
+| Modelo alternativo morto (`qwen-coder`) | `GET text.pollinations.ai/models` lista só `openai-fast` (aliases `openai`); `qwen-coder` → 402 imediato, `mistral` → 404 | `MODELO_ALTERNATIVO = "openai-fast"` + `NUCLEO_IA_MODELOS` por env para trocar sem deploy |
+| Coletor em **recuo** nunca era interpretado | ciclo real: 4 coletores `pausada` → `comDiagnosticoIA: []` (o backoff escondia a falha por horas) | fase de IA prioriza `pausada` além de `mantida` com falha |
+| “Termo amplo” **desativava** a fonte | `esaj-sp`/`esaj-ce` ficaram OFF com “HTTP 200 sem itens”, mas o portal **responde** (pede refino do nome) | peso `refinar` = ∞: desativar por termo do canário é erro do núcleo, não do portal |
+
+**Prova de execução (ciclo real, 38,8 s, 15 coletores, Postgres local):**
+`comDiagnosticoIA: ["djen"]` e o registro em `ColetorAcao`:
+
+```
+djen  desativada  origem=ia  provedor=pollinations:openai  confianca=0.95
+causa: "HTTP 403 em 58 ms com 0 itens: a API bloqueia IP fora do Brasil
+        (configure DJEN_RELAY_URL com egress brasileiro)"
+```
+
+Isto é interpretação real do erro: 403 em 58 ms é geo-bloqueio (não é timeout nem contrato),
+e a ação aplicada é a honesta — desativar com a causa e a saída de configuração no registro.
+
+**Cobertura do catálogo**: **15 coletores / 4 módulos** (juridico 6, licitacoes 1, concursos 1,
+investiga 7 — incluindo `osint-dominio`, `osint-email` e `busca-web`).
+
+**Placar após as mudanças**: API **510 ✔ / 1 skip**, `nucleo.test.ts` **58 ✔**, web **18 ✔**,
+`tsc -b --force` sem erro. Testes novos: `refino não desativa`, `coletor em recuo é
+interpretado pela IA no mesmo ciclo`.

@@ -64,7 +64,10 @@ const DESISTIR_APOS: Record<Assinatura, number> = {
   timeout: 10,
   contrato: 5,
   credencial: 1, // falta de chave não se resolve tentando de novo
-  refinar: 4,
+  // `refinar` significa que NOSSO termo de canário é amplo demais, não que a
+  // fonte caiu. Desativar a fonte por isso seria erro do núcleo, não do portal
+  // (medido: esaj-sp/esaj-ce respondem "muitos processos" para nome comum).
+  refinar: Infinity,
   erro: 8,
   ok: Infinity,
 };
@@ -85,7 +88,7 @@ export function avaliarIncidente(estado: EstadoBreaker, resultado: Parameters<ty
         : sig === "contrato"
           ? `respondeu HTTP ${resultado.http} sem os campos esperados (${(resultado.camposFaltando ?? []).join(", ") || "payload mudou"})`
           : sig === "refinar"
-        ? "portal pediu termo mais específico (respondeu sem lista utilizável)"
+        ? "portal pediu termo mais específico — problema do termo do canário, não da fonte (não desativa)"
         : sig === "credencial"
         ? "coletor exige credencial que não está no ambiente — pendência de configuração, não de rede"
         : sig === "timeout"

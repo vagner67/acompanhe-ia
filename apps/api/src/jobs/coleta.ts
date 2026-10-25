@@ -28,6 +28,17 @@ export interface OpcoesCicloNucleo extends OpcoesNucleo {
   prazoMs?: number;
   /** coletores medidos em paralelo (default 3) */
   concorrencia?: number;
+  /**
+   * Quantos coletores podem ter diagnóstico por IA por ciclo (default 3).
+   * O provedor gratuito responde 1 vez a cada 30 s — cota explícita é o que
+   * impede o ciclo de virar uma fila de 6 minutos.
+   */
+  maxDiagnosticosIA?: number;
+  /**
+   * Orçamento de tempo SÓ da fase de IA (default 150 s). A fase roda após a
+   * medição e nunca segura a coleta: estourou, o resto fica para o próximo ciclo.
+   */
+  prazoIaMs?: number;
   gravarSyncRun?: (r: SyncRunRegistro) => Promise<void>;
 }
 
@@ -42,6 +53,8 @@ export interface ResumoNucleo {
   pausados: string[];
   porModulo: Record<string, { coletores: number; medidos: number; itens: number; erros: number }>;
   truncadoPorPrazo: boolean;
+  /** coletores que receberam diagnóstico da IA nesta execução */
+  comDiagnosticoIA: string[];
 }
 
 export async function rodarCicloNucleo(opts: OpcoesCicloNucleo): Promise<ResumoNucleo> {
@@ -58,6 +71,9 @@ export async function rodarCicloNucleo(opts: OpcoesCicloNucleo): Promise<ResumoN
   // concorrência limitada (default 3): um host lento não consome o ciclo do resto.
   const concorrencia = Math.max(1, Math.min(opts.concorrencia ?? 3, lista.length));
   const fila = [...lista];
+  const orcamentoIA = {
+    restante: opts.usarIA === false ? 0 : Math.max(0, opts.maxDiagnosticosIA ?? Number(process.env.NUCLEO_IA_MAX ?? 3)),
+  };
 
   const medirUm = async (coletor: Coletor): Promise<void> => {
     const bucket = (porModulo[coletor.modulo] ??= { coletores: 0, medidos: 0, itens: 0, erros: 0 });
@@ -67,7 +83,9 @@ export async function rodarCicloNucleo(opts: OpcoesCicloNucleo): Promise<ResumoN
       return;
     }
     const inicio = new Date().toISOString();
-    const r = await cicloColetor(coletor, opts).catch((e: Error) => ({
+    // a IA é aplicada na fase de IA (série, respeitando o ritmo do provedor):
+    // gastar cota aqui em paralelo só geraria 402 e nenhum diagnóstico
+    const r = await cicloColetor(coletor, { ...opts, usarIA: false, orcamentoIA }).catch((e: Error) => ({
       coletorId: coletor.id,
       modulo: coletor.modulo,
       acao: "erro" as const,
@@ -112,9 +130,57 @@ export async function rodarCicloNucleo(opts: OpcoesCicloNucleo): Promise<ResumoN
     }),
   );
 
+  // ── fase de IA: revisita SÓ as fontes que falharam e ainda não tiveram IA ──
+  // Roda depois da medição, em série, respeitando a cota e o limite de ritmo do
+  // provedor. Um host lento não atrasa a coleta, e a IA continua interpretando.
+  const iaRestante = opts.usarIA === false ? 0 : Math.max(0, opts.maxDiagnosticosIA ?? Number(process.env.NUCLEO_IA_MAX ?? 3));
+  // Um coletor em recuo é uma FALHA conhecida: a IA tem de interpretá-la agora,
+  // não depois que o backoff expirar (senão o recuo esconde o erro por horas e o
+  // ciclo termina sem nenhum diagnóstico, como já aconteceu em produção).
+  const alvos = resultados
+    .filter(
+      (r) =>
+        r.diagnostico?.origem !== "ia" &&
+        (r.acao === "pausada" || (r.acao === "mantida" && r.resultado !== null && !r.resultado.ok)),
+    )
+    .sort((a, b) => Number(b.acao === "pausada") - Number(a.acao === "pausada"));
+  const prazoIa = opts.prazoIaMs ?? Number(process.env.NUCLEO_IA_PRAZO_MS ?? 150_000);
+  const tIa = Date.now();
+  const comIA: string[] = [];
+  for (const alvo of alvos.slice(0, iaRestante)) {
+    if (Date.now() - tIa > prazoIa) break;
+    const coletor = lista.find((c) => c.id === alvo.coletorId);
+    if (!coletor) continue;
+    const r = await cicloColetor(coletor, {
+      ...opts,
+      forcarIA: true,
+      usarIA: true,
+      ignorarRecuo: true,
+      maxVizinhos: 0,
+      orcamentoIA,
+    }).catch(() => null);
+    if (!r) continue;
+    if (r.diagnostico?.origem === "ia") {
+      comIA.push(coletor.id);
+      // substitui o resultado determinístico pelo enriquecido com IA
+      const idx = resultados.findIndex((x) => x.coletorId === coletor.id);
+      if (idx >= 0) resultados[idx] = r;
+      await opts.gravarSyncRun?.({
+        source: coletor.id.slice(0, 24),
+        region: `${coletor.modulo}:ia`,
+        startedAt: new Date(tIa).toISOString(),
+        finishedAt: new Date().toISOString(),
+        status: r.acao === "erro" ? "error" : "ok",
+        error: null,
+        items: r.resultado?.itens ?? 0,
+      }).catch(() => {});
+    }
+  }
+
   return {
     ok: resultados.every((r) => r.acao !== "erro"),
     medidoEm: agora.toISOString(),
+    comDiagnosticoIA: comIA,
     ms: Date.now() - t0,
     resultados,
     promovidos: resultados.filter((r) => r.acao === "promovida").map((r) => r.coletorId),

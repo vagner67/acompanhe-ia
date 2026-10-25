@@ -151,7 +151,11 @@ export function nucleoRoutes(deps: {
           ...(body.usarIA === false ? { usarIA: false } : {}),
           ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
           ...(deps.env ? { env: deps.env } : {}),
-          prazoMs: 120_000,
+          prazoMs: 240_000,
+          // cota de IA do provedor gratuito: 1 resposta/30 s — no máximo 1 por clique
+          // (a cobertura completa roda no ciclo agendado, sem limite de HTTP)
+          maxDiagnosticosIA: 1,
+          prazoIaMs: 80_000,
           registrarEvento: (e) => app.log.info(e, "nucleo"),
         });
         await audit(claims, "nucleo.ciclo", null, { promovidos: r.promovidos, revertidos: r.revertidos }, req.ip);

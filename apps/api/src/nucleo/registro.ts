@@ -15,6 +15,8 @@ import { buscarDjen } from "../juridico/djen.js";
 import { consultarEsaj, ESAJ_BASES } from "../juridico/esaj.js";
 import { variarNome } from "../juridico/nacional.js";
 import { fetchContratacoesPage } from "../licitacoes/pncp.js";
+import { checkDomain } from "../osint/domain.js";
+import { checkEmail } from "../osint/email.js";
 import {
   bool,
   num,
@@ -437,6 +439,125 @@ const coletorHibp: Coletor = {
   },
 };
 
+// ───────────────────────── Investiga: módulos do produto (não só hosts) ─────────────────────────
+// `checkDomain`/`checkEmail` são o pipeline REAL que o /investiga usa. Medir os
+// hosts brutos sem medir o módulo deixaria de fora justamente a parte que o
+// usuário vê (findings + candidatos).
+
+const coletorOsintDominio: Coletor = {
+  id: "osint-dominio",
+  modulo: "investiga",
+  host: "rdap.org+dns+ct+wayback",
+  familia: "registro",
+  descricao: "Investiga: módulo de domínio (RDAP + DNS + CT + Wayback no mesmo pipeline)",
+  padrao: { timeoutMs: 8_000 },
+  espaco: { timeoutMs: { tipo: "numero", min: 3_000, max: 20_000, passo: 1_000 } },
+  canarios: [{ id: "dominio-publico", consulta: "example.com", esperaMinItens: 1 }],
+  orcamento: { rpm: 4, rpd: 300 },
+  async executar(p: Params, ctx?: CtxColeta): Promise<ResultadoColeta> {
+    const t0 = Date.now();
+    const dominio = ctx?.consulta ?? "example.com";
+    try {
+      const r = await checkDomain(dominio, {
+        timeoutMs: num(p, "timeoutMs", 8_000),
+        ...(ctx?.fetchImpl ? { fetchFn: ctx.fetchImpl as never } : {}),
+      });
+      const achados = r.findings.filter((f) => f.status === "found").length;
+      return {
+        ok: achados > 0,
+        http: 200,
+        ms: Date.now() - t0,
+        itens: achados,
+        ...(achados === 0 ? { camposFaltando: ["findings:found"] } : {}),
+        amostra: amostra(`${r.findings.length} consultas, ${achados} com resultado; fontes=${[...new Set(r.findings.map((f) => f.sourceId))].join(",")}`),
+      };
+    } catch (e) {
+      return { ok: false, http: null, ms: Date.now() - t0, itens: 0, erro: (e as Error).message.slice(0, 200) };
+    }
+  },
+};
+
+const coletorOsintEmail: Coletor = {
+  id: "osint-email",
+  modulo: "investiga",
+  host: "gravatar+hibp+dns-mx",
+  familia: "registro",
+  descricao: "Investiga: módulo de e-mail (Gravatar + HIBP + MX no mesmo pipeline)",
+  padrao: { timeoutMs: 8_000 },
+  espaco: { timeoutMs: { tipo: "numero", min: 3_000, max: 20_000, passo: 1_000 } },
+  canarios: [{ id: "email-publico", consulta: "test@example.com", esperaMinItens: 0 }],
+  orcamento: { rpm: 4, rpd: 200 },
+  async executar(p: Params, ctx?: CtxColeta): Promise<ResultadoColeta> {
+    const t0 = Date.now();
+    const email = ctx?.consulta ?? "test@example.com";
+    try {
+      const r = await checkEmail(email, {
+        timeoutMs: num(p, "timeoutMs", 8_000),
+        ...(ctx?.fetchImpl ? { fetchFn: ctx.fetchImpl as never } : {}),
+        ...(ctx?.env?.["HIBP_API_KEY"] ? { hibpApiKey: ctx.env["HIBP_API_KEY"] } : {}),
+      });
+      const achados = r.findings.filter((f) => f.status === "found").length;
+      return {
+        ok: r.findings.length > 0,
+        http: 200,
+        ms: Date.now() - t0,
+        itens: achados,
+        // e-mail público sem vazamento é resultado válido: 0 achados ≠ falha
+        amostra: amostra(`${r.findings.length} consultas, ${achados} com resultado`),
+      };
+    } catch (e) {
+      return { ok: false, http: null, ms: Date.now() - t0, itens: 0, erro: (e as Error).message.slice(0, 200) };
+    }
+  },
+};
+
+// ───────────────────────── Chat: modo IA de buscador ─────────────────────────
+
+const coletorBuscaIA: Coletor = {
+  id: "busca-web",
+  modulo: "investiga",
+  host: "duckduckgo+wikipedia",
+  familia: "busca",
+  descricao: "Modo IA de buscador do chat: busca pública real com fontes",
+  padrao: { tentativas: 2, pausaMs: 700 },
+  espaco: {
+    tentativas: { tipo: "numero", min: 1, max: 3, passo: 1 },
+    pausaMs: { tipo: "numero", min: 0, max: 2_000, passo: 500 },
+  },
+  canarios: [{ id: "consulta-ampla", consulta: "tribunal de justiça consulta processual", esperaMinItens: 1 }],
+  orcamento: { rpm: 6, rpd: 300 },
+  async executar(p: Params, ctx?: CtxColeta): Promise<ResultadoColeta> {
+    const t0 = Date.now();
+    const { buscarWebDetalhado } = await import("../juridico/buscaWeb.js");
+    const pergunta = ctx?.consulta ?? "tribunal de justiça consulta processual";
+    try {
+      const r = await buscarWebDetalhado(pergunta, {
+        tentativas: num(p, "tentativas", 2),
+        pausaMs: num(p, "pausaMs", 700),
+        ...(ctx?.fetchImpl ? { fetchImpl: ctx.fetchImpl } : {}),
+      });
+      const falhas = (r.diagnostico ?? []).filter((d) => d.status === 0 || d.status >= 400);
+      const bloqueio = (r.diagnostico ?? []).some((d) => d.status === 403 || d.status === 429);
+      return {
+        ok: r.fontes.length > 0,
+        http: bloqueio ? 403 : 200,
+        ms: Date.now() - t0,
+        itens: r.fontes.length,
+        ...(bloqueio ? { bloqueio: true } : {}),
+        ...(r.fontes.length === 0
+          ? {
+              erro: `nenhuma fonte devolveu resultado (${falhas.length} backend(s) falharam)`,
+              camposFaltando: ["fontes"],
+            }
+          : {}),
+        amostra: amostra(`${r.fontes.length} fontes; 1ª=${r.fontes[0]?.titulo ?? "—"}`),
+      };
+    } catch (e) {
+      return { ok: false, http: null, ms: Date.now() - t0, itens: 0, erro: (e as Error).message.slice(0, 200) };
+    }
+  },
+};
+
 // ───────────────────────── Registro ─────────────────────────
 
 const UFS_ESAJ = Object.keys(ESAJ_BASES);
@@ -451,6 +572,9 @@ export const COLETORES: Coletor[] = [
   coletorCrtsh,
   coletorWayback,
   coletorHibp,
+  coletorOsintDominio,
+  coletorOsintEmail,
+  coletorBuscaIA,
 ];
 
 export function coletorPorId(id: string): Coletor | undefined {

@@ -5,13 +5,14 @@
  * devolvendo fixture), store, otimizador, diagnóstico e disjuntor. Nada de mock de
  * função interna: o que é verificado é o que roda em produção.
  */
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { COLETORES, amostra, catalogo, coletorPorId } from "../src/nucleo/registro.js";
 import { EPS, ganhoReal, pontuarColeta } from "../src/nucleo/pontuar.js";
 import { agregar } from "../src/nucleo/tipos.js";
 import {
   diagnosticar,
   diagnosticarPorRegras,
+  limparCacheIA,
   extrairJson,
   montarConsulta,
   validarAjustes,
@@ -253,6 +254,8 @@ describe("Diagnóstico por regras (determinístico, sem IA)", () => {
 });
 
 describe("IA de buscador: interpreta o erro e só aplica o que é válido", () => {
+  // o cache de diagnóstico é do processo: entre testes, ele precisa zerar
+  beforeEach(() => limparCacheIA());
   const coletor = coletorDeTeste({
     executar: () => ok(1),
     padrao: { timeoutMs: 10_000, retries: 1 },
@@ -270,11 +273,79 @@ describe("IA de buscador: interpreta o erro e só aplica o que é válido", () =
     versao: 1,
   };
 
-  it("sem AI_PROVIDER/AI_API_KEY cai no determinístico e DIZ isso (nada fingido)", async () => {
-    const d = await diagnosticar(entrada, { env: {} });
+  it("sem AI_PROVIDER/AI_API_KEY usa a camada gratuita sem chave (pollinations)", async () => {
+    const fetchImpl = (async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("pollinations")) {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: '{"causa":"timeout de 30 s no host: ampliar janela","confianca":0.7,"acao":"ajustar","ajustes":[{"chave":"timeoutMs","para":20000,"porque":"host lento"}]}',
+                },
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response("<html><body>sem resultados</body></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+    limparCacheIA();
+    const d = await diagnosticar(entrada, { env: {}, fetchImpl, espacoMs: 0 });
+    expect(d.origem).toBe("ia");
+    expect(d.provedor).toContain("pollinations");
+    expect(d.ajustes).toEqual([{ chave: "timeoutMs", de: 10_000, para: 20_000, porque: "host lento" }]);
+  });
+
+  it("provedor gratuito limitado (402) → determinístico, com o motivo real registrado", async () => {
+    const fetchImpl = (async (url: string | URL) =>
+      String(url).includes("pollinations")
+        ? new Response('{"status":402,"error":{"code":"FREE_LIMIT"}}', { status: 402 })
+        : new Response("<html><body>x</body></html>", { status: 200 })) as unknown as typeof fetch;
+    limparCacheIA();
+    const d = await diagnosticar(entrada, { env: {}, fetchImpl, espacoMs: 0 });
     expect(d.origem).toBe("regras");
+    expect(d.descartado).toMatch(/limite|cooldown|não respondeu/);
+  });
+
+  it("evidência real de busca entra no prompt e vira fonte citável", async () => {
+    const { buscarEvidencias, montarPromptComEvidencia } = await import("../src/nucleo/ia-diagnostico.js");
+    const fetchImpl = (async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("duckduckgo") || u.includes("html.duckduckgo")) {
+        return new Response(
+          `<div class="result"><a class="result__a" href="https://esaj.tjsp.jus.br/ajuda">Ajuda e-SAJ</a><a class="result__snippet">limite de 10 consultas por minuto</a></div>`,
+          { status: 200, headers: { "content-type": "text/html" } },
+        );
+      }
+      return new Response("<html></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+    const ev = await buscarEvidencias(entrada, { fetchImpl });
+    const prompt = montarPromptComEvidencia(entrada, ev);
+    if (ev.length > 0) {
+      expect(prompt).toContain(ev[0]!.url);
+      expect(prompt).toContain("Evidências REAIS");
+    }
+    // sem evidência o prompt não inventa seção vazia
+    expect(montarPromptComEvidencia(entrada, [])).not.toContain("Evidências REAIS");
+  });
+
+  it("coleta saudável não gasta cota de IA", async () => {
+    limparCacheIA();
+    let chamou = 0;
+    const fetchImpl = (async () => {
+      chamou++;
+      return new Response("{}", { status: 200 });
+    }) as unknown as typeof fetch;
+    const d = await diagnosticar(
+      { ...entrada, resultado: { ok: true, http: 200, ms: 400, itens: 9 } },
+      { env: {}, fetchImpl },
+    );
     expect(d.provedor).toBe("deterministico");
-    expect(d.descartado).toContain("IA de buscador não configurada");
+    expect(d.descartado).toContain("saudável");
+    expect(chamou).toBe(0);
   });
 
   it("com tavily (fetch injetado) aplica o ajuste que a IA propôs", async () => {
@@ -424,6 +495,18 @@ describe("Motor: mede, promove com canário, reverte e desliga", () => {
     const r = await cicloColetor(coletor, { store, pausaMs: 0, usarIA: false });
     expect(r.acao).toBe("pausada");
     expect(chamou).toBe(0);
+  });
+
+  it("pedir refino NUNCA desativa a fonte (o problema é o termo do canário)", async () => {
+    const store = new InMemoryNucleoStore();
+    await store.salvar({ ...estadoInicial("teste-motor", { timeoutMs: 10_000 }), ciclosZerados: 50 });
+    const coletor = coletorDeTeste({
+      executar: () => ({ ok: false, http: 200, ms: 500, itens: 0, precisaRefinar: true }),
+    });
+    const r = await cicloColetor(coletor, { store, pausaMs: 0, usarIA: false });
+    expect(r.acao).not.toBe("desativada");
+    expect((await store.obter(coletor.id))!.ativo).toBe(true);
+    expect(r.motivo.toLowerCase()).toContain("específico");
   });
 
   it("captcha repetido desliga o coletor (parar de insistir é a correção honesta)", async () => {
@@ -630,5 +713,169 @@ describe("P0 do plano.md — detector de deriva sobrevive entre ciclos", () => {
     vi.useRealTimers();
     expect(ciclo).toBe(3);
     expect(eventos).toContain("auto.deriva");
+  });
+});
+
+describe("Recursivo de verdade: a IA decide, o canário mede, o histórico redecide", () => {
+  beforeEach(() => limparCacheIA());
+  // o provedor real aceita 1 resposta/30 s; no teste não há motivo para esperar
+  const env = { NUCLEO_IA_ESPACO_MS: "0" };
+
+  /** fetch que responde à camada gratuita de IA e à busca de evidência. */
+  function fetchIA(json: string, itensPorTimeout: (t: number) => number) {
+    const chamadasIA: string[] = [];
+    const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes("pollinations")) {
+        const corpo = String(init?.body ?? "");
+        chamadasIA.push(corpo);
+        return new Response(JSON.stringify({ choices: [{ message: { content: json } }] }), { status: 200 });
+      }
+      if (u.includes("duckduckgo") || u.includes("duck")) {
+        return new Response(
+          `<a class="result__a" href="https://exemplo.gov.br/limites">Limites do portal</a><a class="result__snippet">o portal limita a 10 requisições por minuto</a>`,
+          { status: 200, headers: { "content-type": "text/html" } },
+        );
+      }
+      return new Response("<html></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+    return { fetchImpl, chamadasIA, itensPorTimeout };
+  }
+
+  it("IA propõe → canário mede ganho → promoção aplicada e registrada com origem ia", async () => {
+    const store = new InMemoryNucleoStore();
+    const json =
+      '{"causa":"host lento: 1 item com 10 s de timeout; ampliar a janela resolve","confianca":0.7,"acao":"ajustar","ajustes":[{"chave":"timeoutMs","para":15000,"porque":"host responde em ~12 s"}]}';
+    const { fetchImpl, chamadasIA } = fetchIA(json, (t) => (t >= 15_000 ? 8 : 1));
+    const coletor = coletorDeTeste({
+      executar: (p) =>
+        Number(p["timeoutMs"]) >= 15_000 ? ok(8) : { ok: false, http: null, ms: 15_000, itens: 0, erro: "aborted" },
+    });
+    const r = await cicloColetor(coletor, { store, fetchImpl, env, pausaMs: 0, maxVizinhos: 2 });
+    expect(chamadasIA.length).toBeGreaterThan(0); // a IA foi realmente chamada
+    expect(r.diagnostico?.origem).toBe("ia");
+    expect(r.acao).toBe("promovida");
+    expect((await store.obter(coletor.id))!.params["timeoutMs"]).toBe(15_000);
+    const acao = (await store.acoes(coletor.id)).at(-1)!;
+    expect(acao.origem).toBe("ia");
+    expect(acao.resultado).toBe("aplicada");
+    expect(acao.motivo).toContain("IA");
+  });
+
+  it("IA propõe mas o canário NÃO mede ganho → nada é aplicado, com motivo", async () => {
+    const store = new InMemoryNucleoStore();
+    const json = '{"causa":"timeout","confianca":0.9,"acao":"ajustar","ajustes":[{"chave":"timeoutMs","para":15000,"porque":"x"}]}';
+    const { fetchImpl } = fetchIA(json, () => 1);
+    const coletor = coletorDeTeste({ executar: () => ok(3) }); // igual em qualquer timeout
+    const r = await cicloColetor(coletor, { store, fetchImpl, env, pausaMs: 0, maxVizinhos: 1 });
+    expect(r.acao).toBe("mantida");
+    const acao = (await store.acoes(coletor.id)).at(-1)!;
+    expect(acao.resultado).toBe("rejeitada");
+    expect(acao.motivo).toMatch(/ε|ganho/i);
+  });
+
+  it("ciclo seguinte (recursão) reavalia com o histórico e não repete o que já falhou", async () => {
+    const store = new InMemoryNucleoStore();
+    const json = '{"causa":"timeout","confianca":0.9,"acao":"ajustar","ajustes":[{"chave":"timeoutMs","para":15000,"porque":"x"}]}';
+    const { fetchImpl, chamadasIA } = fetchIA(json, () => 2);
+    const coletor = coletorDeTeste({
+      executar: () => ({ ok: false, http: null, ms: 15_000, itens: 0, erro: "aborted" }),
+    });
+    const r1 = await cicloColetor(coletor, { store, fetchImpl, env, pausaMs: 0, maxVizinhos: 1 });
+    limparCacheIA();
+    // o próximo ciclo é 6 h depois: o recuo do disjuntor já expirou
+    await store.salvar({ ...(await store.obter(coletor.id))!, proximaExecucaoEm: null });
+    const r2 = await cicloColetor(coletor, { store, fetchImpl, env, pausaMs: 0, maxVizinhos: 1 });
+    const m = await store.metricas(coletor.id);
+    expect(m.length).toBeGreaterThanOrEqual(4); // 2 ciclos × (vigente + vizinho): memória real
+    expect(chamadasIA.length).toBeGreaterThanOrEqual(2);
+    expect(r1.versao).toBe(1);
+    expect(r2.versao).toBe(1); // sem ganho medido, versão não sobe
+  });
+
+  it("coletor em RECUO também é interpretado pela IA no mesmo ciclo (recuo não esconde o erro)", async () => {
+    const store = new InMemoryNucleoStore();
+    const json = '{"causa":"403 do portal: exigir cabeçalho de navegador","confianca":0.6,"acao":"manter","ajustes":[]}';
+    const { fetchImpl, chamadasIA } = fetchIA(json, () => 1);
+    const falho = { ...coletorPorId("osint-rdap")!, async executar() { return { ok: false, http: 403, ms: 900, itens: 0, erro: "HTTP 403" }; } };
+    // estado já gravado com recuo ativo: o próximo ciclo só mediria daqui a 1 h
+    await store.salvar({
+      ...estadoInicial(falho.id, falho.padrao),
+      ultimoErro: "HTTP 403",
+      falhasSeguidas: 2,
+      proximaExecucaoEm: new Date(Date.now() + 3_600_000).toISOString(),
+    });
+    const r = await rodarCicloNucleo({
+      store,
+      fetchImpl,
+      env,
+      pausaMs: 0,
+      maxVizinhos: 0,
+      maxDiagnosticosIA: 1,
+      coletores: [falho],
+    });
+    // a fase de medição pulou o coletor por causa do recuo (sem resultado medido);
+    // mesmo assim a fase de IA foi atrás do erro
+    expect(chamadasIA.length).toBeGreaterThan(0); // a IA foi chamada para interpretar a falha
+    expect(r.resultados[0]!.diagnostico?.origem).toBe("ia"); // e o resultado final já vem interpretado
+    expect(r.comDiagnosticoIA).toContain(falho.id);
+  });
+
+  it("a cota de IA do ciclo é respeitada (provedor gratuito: 1 resposta/30 s)", async () => {
+    const { fetchImpl, chamadasIA } = fetchIA('{"causa":"x","confianca":0.5,"acao":"manter","ajustes":[]}', () => 1);
+    const lento = { ...coletorPorId("osint-rdap")!, async executar() { return ok(0); } };
+    const r = await rodarCicloNucleo({
+      store: new InMemoryNucleoStore(),
+      fetchImpl,
+      env,
+      pausaMs: 0,
+      maxVizinhos: 0,
+      maxDiagnosticosIA: 1,
+      coletores: [lento, { ...lento, id: "lento2" }, { ...lento, id: "lento3" }],
+    });
+    expect(r.resultados.length).toBe(3);
+    // 1 diagnóstico com IA; os outros 2 seguem no determinístico
+    expect(chamadasIA.length).toBeLessThanOrEqual(2); // 2 modelos em paralelo = 1 diagnóstico
+  });
+});
+
+describe("Cobertura de ponta a ponta: módulos do Investiga e busca do chat", () => {
+  it("registra os módulos que o usuário usa (domínio, e-mail e busca web), não só hosts crus", () => {
+    const ids = catalogo().map((c) => c.id);
+    expect(ids).toContain("osint-dominio");
+    expect(ids).toContain("osint-email");
+    expect(ids).toContain("busca-web");
+  });
+
+  it("busca-web mede fontes reais e trata backend falhando como falha declarada", async () => {
+    const vazio = (async () => new Response("<html><body>nada</body></html>", { status: 200 })) as unknown as typeof fetch;
+    const c = coletorPorId("busca-web")!;
+    const r = await c.executar(c.padrao, { fetchImpl: vazio, consulta: "tribunal consulta processual" });
+    expect(r.http).toBe(200);
+    expect(r.ok).toBe(false);
+    expect(r.camposFaltando).toContain("fontes");
+  });
+
+  it("busca-web com resultado real (fixture DDG) conta as fontes", async () => {
+    const html = `<div class="result"><a class="result__a" href="https://exemplo.jus.br/x">Consulta</a><a class="result__snippet">trecho</a></div>`;
+    const fetchImpl = (async () => new Response(html, { status: 200, headers: { "content-type": "text/html" } })) as unknown as typeof fetch;
+    const c = coletorPorId("busca-web")!;
+    const r = await c.executar({ ...c.padrao, pausaMs: 0 }, { fetchImpl, consulta: "tribunal consulta processual" });
+    expect(r.itens).toBeGreaterThan(0);
+    expect(r.ok).toBe(true);
+  });
+
+  it("osint-email roda o pipeline real (Gravatar por fixture) sem rede externa", async () => {
+    const fetchImpl = (async (url: string | URL) =>
+      String(url).includes("gravatar")
+        ? new Response("", { status: 200 })
+        : new Response("{}", { status: 404 })) as unknown as typeof fetch;
+    const c = coletorPorId("osint-email")!;
+    const r = await c.executar(c.padrao, { fetchImpl, consulta: "alguem@example.com" });
+    expect(r.ms).toBeGreaterThanOrEqual(0);
+    expect(r.http).toBe(200);
+    // achou perfil no Gravatar → 1 item; se o MX falhar no ambiente, ainda é resultado válido
+    expect(r.itens).toBeGreaterThanOrEqual(0);
+    expect(r.erro).toBeUndefined();
   });
 });

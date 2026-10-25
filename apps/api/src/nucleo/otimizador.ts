@@ -55,6 +55,24 @@ export interface OpcoesNucleo {
   maxVizinhos?: number;
   /** desliga a chamada de IA (testes e ambientes sem rede) */
   usarIA?: boolean;
+  /**
+   * Pede o diagnóstico da IA mesmo quando a falha é "parcial": é o que a fase
+   * de IA do ciclo usa para revisitar só as fontes que falharam.
+   */
+  forcarIA?: boolean;
+  /**
+   * Ignora o recuo do disjuntor neste ciclo. Usado pela fase de IA: o recuo
+   * gravado agora vale para o PRÓXIMO ciclo, não pode bloquear a revisão do
+   * mesmo ciclo (senão a IA nunca roda justamente após a falha).
+   */
+  ignorarRecuo?: boolean;
+  /** modelo da camada gratuita de IA (default: `openai`) */
+  modeloIA?: string;
+  /**
+   * Cota compartilhada de diagnósticos com IA no ciclo (o provedor gratuito
+   * entrega 1 resposta/30 s). Esgotou → o resto segue no determinístico.
+   */
+  orcamentoIA?: { restante: number };
   /** pausa entre requests do MESMO coletor (orçamento rpm) */
   pausaMs?: number;
   dormir?: (ms: number) => Promise<void>;
@@ -96,6 +114,10 @@ function evidenciaJson(d: Diagnostico, score: number, extra: Record<string, unkn
     causa: d.causa,
     acao: d.acao,
     confianca: d.confianca,
+    // proveniência: quem decidiu (ia/regras), qual camada e o que foi descartado
+    origem: d.origem,
+    provedor: d.provedor,
+    descartado: d.descartado,
     score: Math.round(score * 100) / 100,
     fontes: d.fontes.slice(0, 3).map((f) => f.url).filter(Boolean),
     evidencias: d.evidencias.slice(0, 3),
@@ -111,7 +133,7 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
   const maxVizinhos = opts.maxVizinhos ?? 2;
 
   const estado = (await opts.store.obter(coletor.id)) ?? estadoInicial(coletor.id, coletor.padrao, agora.toISOString());
-  const liberado = podeColetar(estado, agora);
+  const liberado = opts.ignorarRecuo ? { pode: true, motivo: "recuo ignorado (fase de IA do mesmo ciclo)" } : podeColetar(estado, agora);
   if (!liberado.pode) {
     return {
       coletorId: coletor.id,
@@ -243,6 +265,10 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
   }
 
   // 3) diagnóstico (IA de buscador ou regras) — sempre com a evidência medida
+  const podeIA = opts.usarIA !== false && (!opts.orcamentoIA || opts.orcamentoIA.restante > 0);
+  // reserva a cota ANTES de chamar: com coletores em paralelo, decrementar depois
+  // deixaria todos passarem no mesmo ciclo (corrida real, medida no teste)
+  if (podeIA && opts.orcamentoIA) opts.orcamentoIA.restante -= 1;
   const diagnostico: Diagnostico = await diagnosticar(
     {
       coletor,
@@ -254,10 +280,16 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
         ? { acao: acoes.at(-1)!.acao, resultado: acoes.at(-1)!.resultado, motivo: acoes.at(-1)!.motivo }
         : null,
     },
-    { ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}), ...(opts.env ? { env: opts.env } : {}) },
+    {
+      ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
+      ...(opts.env ? { env: opts.env } : {}),
+      ...(podeIA ? {} : { usarIA: false }),
+      ...(opts.modeloIA ? { modelo: opts.modeloIA } : {}),
+      ...(opts.forcarIA ? { forcarIA: true } : {}),
+    },
   ).catch((e: Error) => diagnosticarPorRegrasSeguro(coletor, estado, vigente.r, historico, e.message));
 
-  const diag: Diagnostico = opts.usarIA === false ? diagnosticarPorRegrasSeguro(coletor, estado, vigente.r, historico) : diagnostico;
+  const diag: Diagnostico = diagnostico;
 
   // 4) disjuntor: decide recuo/desligamento com base no resultado real
   const incidente = avaliarIncidente(
