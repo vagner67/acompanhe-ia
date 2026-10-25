@@ -273,3 +273,47 @@ E2E produção 390×844: RESULTADOS {itens: 37, foot: "37 processo(s) · E-SAJ A
 2. **Captcha** nos portais PJe/Projudi/STJ: não burlamos — oferecemos o portal oficial.
 3. **e-SAJ com termo curto** responde "muitos processos": o produto agora pede refinamento em vez de mentir "0 resultados".
 4. **Auto-aperfeiçoamento** hoje otimiza parâmetros por fonte com canário. Próximo passo natural (não implementado, para não prometer): variantes de URL/seletor por família (e-SAJ/PJe) e promoção automática de canário novo quando a deriva é detectada.
+
+---
+
+## 10. Ciclo fechado do auto-aperfeiçoamento (25/10 ~04h15)
+
+A pergunta "o auto-aperfeiçoamento está no app completo?" expôs 4 furos reais. Todos corrigidos e testados.
+
+### 10.1 O que estava errado (medido no código, não suposto)
+
+| # | Furo | Consequência |
+|---|---|---|
+| 1 | job passava `decidir(vigente, m, async () => m)` | **nunca avaliava vizinhos → nunca promovia nada**. O ciclo era decorativo. |
+| 2 | job criava `new InMemoryPerfilStore()` e as rotas outro | o que o ciclo aprendia nunca aparecia em `GET /auto` |
+| 3 | `consultarNacional` usava timeout/páginas fixos | o perfil aprendido **não era aplicado** na busca |
+| 4 | `perfis` em memória | restart/deploy apagava todo aprendizado |
+
+### 10.2 O que existe agora
+
+- **`probe.ts` mede com o perfil candidato aplicado** (timeout, variante de nome, relay). `medirFonte(fonte, termo, agora, perfil)`.
+- **Job avalia de verdade**: `medirCandidato` por vizinho, `maxAvaliacoes=3`, prazo `AUTO_PRAZO_MS` (120 s), e **só otimiza fonte saudável** (ciclo caiu de **90 s → 6 s**; fonte bloqueada não consome requisições).
+- **Um store só**: `PerfilStoreResiliente(PrismaPerfilStore)` no `buildApp`, injetado nas rotas **e** no job. Tabelas `FontePerfil` e `FonteMetrica` (o `deploy/start.sh` já roda `prisma db push`).
+- **Busca aplica o perfil**: `variarNome()` (0 exato, 1 sem acento, 2 sobrenome+primeiro), timeout por fonte, concorrência do fan-out, relay on/off no DJEN. O relatório devolve `perfilVersao` e a UI mostra "coleta v3".
+- **Degradação**: tabela ausente/banco fora → cai para memória, avisa **uma vez** no log, e `GET /auto` responde 200 (antes dava **500 P2021**).
+- **Métrica por ciclo** gravada em `FonteMetrica` (10 linhas após 2 ciclos reais).
+
+### 10.3 Prova ao vivo (banco local + Postgres real)
+
+```
+POST /auto/ciclo → ok, 6.0 s
+  djen     manter  -0.08   · fonte não respondeu neste ciclo — nada a otimizar
+  esaj-sp  manter   39.56  · respondeu sem itens — nada a otimizar
+  esaj-al  manter  -0.74   · não respondeu
+  esaj-ac  manter  139.26  · melhor vizinho (139.77) não supera o atual + ε=3
+  esaj-ce  manter   39.47
+FonteMetrica: 10 linhas
+perfil esaj-ac v3 inserido no Postgres (timeout 5 s, concorrência 1, variante 1)
+GET /nacional?uf=ac → fontes[esaj-ac].perfilVersao = 3   ← a busca USOU o perfil do banco
+```
+
+"manter" aqui é o resultado **correto** (empate dentro de ε); o que os testes provam é que, quando existe ganho real, ele promove e grava v2 — ver `test/ciclo-fechado.test.ts` e `test/autoaperfeicoamento-job.test.ts`.
+
+### 10.4 Testes
+
+`447 API` + `18 web` (eram 442/17). Novos: `ciclo-fechado.test.ts` (12) cobrindo aplicação do perfil, store compartilhado, Prisma (salvar/vigente/histórico/rollback/métrica/dado sujo) e resiliência; job (12) cobrindo promoção real, custo do ciclo, prazo e deriva.

@@ -23,6 +23,8 @@ import { cobertura, FONTES_INFO } from "../juridico/fontes.js";
 import { consultarNacional, type ItemNacional } from "../juridico/nacional.js";
 import { matrizCobertura, resumoFrota, RODAPE_FROTA } from "../juridico/frota.js";
 import { medirFontes } from "../juridico/probe.js";
+import { perfisParaBusca } from "../juridico/perfil-prisma.js";
+import { UFS_ESAJ_ABERTAS } from "../juridico/frota.js";
 import { rodarCicloAuto } from "../jobs/autoaperfeicoamento.js";
 import {
   decidir, DetectorDeriva, InMemoryPerfilStore, perfilVigente, pontuar,
@@ -56,6 +58,13 @@ export interface ProcessosDeps {
   perfis?: PerfilStore;
   /** Probe HTTP real das fontes (injetável em teste). */
   probeFonte?: (fonteId: string, termo: string) => Promise<Metrica>;
+  /** Medição do ciclo do auto-aperfeiçoamento (injetável em teste: sem rede). */
+  autoMedir?: {
+    medir?: (fontes: string[], termo: string, agora: string) => Promise<Metrica[]>;
+    medirCandidato?: (fonteId: string, perfil: PerfilFonte, termo: string, agora: string) => Promise<Metrica>;
+    maxAvaliacoes?: number;
+    prazoMs?: number;
+  };
 }
 
 const perguntaSchema = z.object({ question: z.string().min(3).max(500) });
@@ -337,9 +346,15 @@ export function processosRoutes(deps: ProcessosDeps) {
 
       const consultar = deps.nacional ?? consultarNacional;
       const indice = deps.indice;
+      // Perfis vigentes do auto-aperfeiçoamento entram na busca como parâmetros
+      // reais (timeout, concorrência, variante de nome, relay). Se o store falhar,
+      // seguimos com o padrão da casa — degradar, nunca derrubar.
+      const fontesConhecidas = ["djen", ...UFS_ESAJ_ABERTAS.map((u) => `esaj-${u}`)];
+      const perfis = await perfisParaBusca(deps.perfis ?? perfisPadrao(), fontesConhecidas).catch(() => ({}));
       const r = await consultar(q.q, {
         ...(q.uf ? { uf: q.uf } : {}),
         ...(q.limite ? { limite: q.limite } : {}),
+        perfis,
         ...(deps.datajudOpts ? { djenOpts: {} } : {}),
         // índice próprio entra como fonte injetada (mesmo store da rota /indice)
         indice: async (termo: string): Promise<ItemNacional[]> => {
@@ -426,6 +441,7 @@ export function processosRoutes(deps: ProcessosDeps) {
         agora: new Date(agora),
         detector: detectorDeriva,
         registrarEvento: (e) => app.log.warn(e, "auto-aperfeiçoamento"),
+        ...(deps.autoMedir ?? {}),
       });
       return reply.send({ ...r, termo });
     });

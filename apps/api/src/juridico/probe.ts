@@ -5,7 +5,8 @@
  */
 import { consultarEsaj } from "./esaj.js";
 import { buscarDjen } from "./djen.js";
-import type { Metrica } from "./autoaperfeicoamento.js";
+import { variarNome } from "./nacional.js";
+import type { Metrica, PerfilFonte } from "./autoaperfeicoamento.js";
 
 export const CANARIOS: Record<string, string> = {
   // termo de controle por fonte: nome que sabidamente aparece nas fixtures/produção
@@ -16,10 +17,24 @@ export const CANARIOS: Record<string, string> = {
   djen: "João Carlos",
 };
 
-export async function medirFonte(fonteId: string, termo: string, agora: string): Promise<Metrica> {
+export async function medirFonte(
+  fonteId: string,
+  termo: string,
+  agora: string,
+  perfil?: PerfilFonte,
+): Promise<Metrica> {
   const t0 = Date.now();
+  // o perfil candidato é APLICADO na medição — sem isso o hill-climbing avalia
+  // todos os vizinhos com a mesma configuração e nunca encontra ganho real.
+  const consulta = perfil ? variarNome(termo, perfil.varianteNome) : termo;
   if (fonteId === "djen") {
-    const r = await buscarDjen({ nomeParte: termo, pagina: 1, limite: 20 });
+    const r = await buscarDjen(
+      { nomeParte: consulta, pagina: 1, limite: 20 },
+      {
+        ...(perfil?.timeoutMs ? { timeoutMs: perfil.timeoutMs } : {}),
+        ...(perfil && perfil.usaRelay === false ? { relay: null } : {}),
+      },
+    );
     // geo_bloqueado/bloqueado/indisponivel/erro = a fonte NÃO respondeu.
     // Contar bloqueio como sucesso inflaria a confiabilidade do DJEN (medido: 403).
     const erro = r.estado !== "ok" && r.estado !== "sem_resultados";
@@ -37,7 +52,7 @@ export async function medirFonte(fonteId: string, termo: string, agora: string):
   }
   if (fonteId.startsWith("esaj-")) {
     const uf = fonteId.slice("esaj-".length);
-    const r = await consultarEsaj(uf, "NMPARTE", termo, 1);
+    const r = await consultarEsaj(uf, "NMPARTE", consulta, 1);
     const bloqueado = r.estado === "bloqueado";
     return {
       fonteId,
@@ -64,8 +79,13 @@ export async function medirFonte(fonteId: string, termo: string, agora: string):
   };
 }
 
-export async function medirFontes(fonteIds: string[], termo: string, agora: string): Promise<Metrica[]> {
+export async function medirFontes(
+  fonteIds: string[],
+  termo: string,
+  agora: string,
+  perfis?: Record<string, PerfilFonte | undefined>,
+): Promise<Metrica[]> {
   const out: Metrica[] = [];
-  for (const id of fonteIds) out.push(await medirFonte(id, CANARIOS[id] ?? termo, agora));
+  for (const id of fonteIds) out.push(await medirFonte(id, CANARIOS[id] ?? termo, agora, perfis?.[id]));
   return out;
 }

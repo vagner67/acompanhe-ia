@@ -381,6 +381,7 @@ export interface FonteNacionalDto {
   itens: number;
   ms: number;
   motivo?: string;
+  perfilVersao?: number;
 }
 
 export interface BuscaNacionalResp {

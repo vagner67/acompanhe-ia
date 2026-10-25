@@ -863,3 +863,41 @@ model MovimentoIndice {
   @@unique([numeroCnj, codigo, dataHora])
   @@index([numeroCnj, dataHora])
 }
+
+// ————————— Perfis de coleta auto-aprimorados (plano-91-tribunais §5) —————————
+// Cada linha é a configuração de UMA fonte numa versão. O perfil vigente é a
+// maior versão; o histórico permite rollback quando o ciclo degrada.
+model FontePerfil {
+  id          BigInt   @id @default(autoincrement())
+  fonteId     String   @db.VarChar(40)
+  versao      Int
+  timeoutMs   Int
+  paginas     Int
+  concorrencia Int
+  varianteNome Int
+  usaRelay    Boolean
+  score       Float
+  motivo      String?
+  criadoEm    DateTime @default(now())
+
+  @@unique([fonteId, versao])
+  @@index([fonteId, versao])
+}
+
+// Métrica de cada ciclo (auditoria do que o auto-aperfeiçoamento viu).
+model FonteMetrica {
+  id          BigInt   @id @default(autoincrement())
+  ts          DateTime @default(now())
+  fonteId     String   @db.VarChar(40)
+  consultas   Int
+  itens       Int
+  erros       Int
+  captchas    Int
+  timeouts    Int
+  msP95       Int
+  canarioItens Int
+  score       Float
+
+  @@index([fonteId, ts])
+  @@index([ts])
+}

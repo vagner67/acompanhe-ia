@@ -778,6 +778,7 @@ export function JuridicoScreen({ a, toast }: Props) {
                 <div className="tiny">
                   {f.texto}
                   {f.ms ? ` · ${f.ms} ms` : ""}
+                  {f.perfilVersao ? ` · coleta v${f.perfilVersao}` : ""}
                 </div>
               </div>
               <span className={`tag ${f.tom === "ok" ? "green" : f.tom === "ruim" ? "warn" : ""}`}>{f.itens} nesta busca</span>

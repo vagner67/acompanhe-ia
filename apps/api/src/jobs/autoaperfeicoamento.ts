@@ -13,9 +13,10 @@ import {
   pontuar,
   type Decisao,
   type Metrica,
+  type PerfilFonte,
   type PerfilStore,
 } from "../juridico/autoaperfeicoamento.js";
-import { medirFontes } from "../juridico/probe.js";
+import { medirFonte, medirFontes } from "../juridico/probe.js";
 
 export const FONTES_PADRAO = ["djen", "esaj-sp", "esaj-al", "esaj-ac", "esaj-ce"] as const;
 
@@ -27,6 +28,18 @@ export interface CicloOpts {
   detector?: DetectorDeriva;
   /** Injetável em teste; default = HTTP real das fontes. */
   medir?: (fontes: string[], termo: string, agora: string) => Promise<Metrica[]>;
+  /**
+   * Mede UM candidato (perfil alternativo) daquela fonte. Default = HTTP real
+   * com o perfil aplicado. Sem isto o ciclo não avalia vizinhos e nunca promove.
+   */
+  medirCandidato?: (fonteId: string, perfil: PerfilFonte, termo: string, agora: string) => Promise<Metrica>;
+  /**
+   * Quantos vizinhos avaliar por fonte. Cada vizinho é uma requisição REAL:
+   * 3 é o equilíbrio entre achar ganho e não martelar o portal.
+   */
+  maxAvaliacoes?: number;
+  /** Teto de tempo do ciclo inteiro (ms). Estourou → mantém o que já decidiu. */
+  prazoMs?: number;
   /** Registro de evento de operação (opsEvent) — opcional. */
   registrarEvento?: (e: { tipo: string; detalhe: string; gravidade: "info" | "alerta" }) => Promise<void> | void;
 }
@@ -41,6 +54,8 @@ export interface CicloResultado {
   nuncaFuncionaram: string[];
   msTotal: number;
   erro: string | null;
+  /** ciclo interrompido pelo teto de tempo (as fontes restantes ficam para o próximo) */
+  truncadoPorPrazo?: boolean;
 }
 
 export async function rodarCicloAuto(opts: CicloOpts): Promise<CicloResultado> {
@@ -49,6 +64,9 @@ export async function rodarCicloAuto(opts: CicloOpts): Promise<CicloResultado> {
   const fontes = opts.fontes ?? [...FONTES_PADRAO];
   const detector = opts.detector ?? new DetectorDeriva();
   const medir = opts.medir ?? medirFontes;
+  const medirCandidato =
+    opts.medirCandidato ??
+    ((fonteId: string, perfil: PerfilFonte, t: string, agoraIso: string) => medirFonte(fonteId, t, agoraIso, perfil));
 
   let metricas: Metrica[] = [];
   let erro: string | null = null;
@@ -69,11 +87,53 @@ export async function rodarCicloAuto(opts: CicloOpts): Promise<CicloResultado> {
     };
   }
 
+  // telemetria do ciclo (FonteMetrica) — queremos saber o que o ciclo viu
+  const registradora = opts.store as { registrarMetrica?: (m: Metrica, score: number) => Promise<void> };
+  if (registradora.registrarMetrica) {
+    for (const m of metricas) await registradora.registrarMetrica(m, pontuar(m)).catch(() => {});
+  }
+
   const decisoes: Decisao[] = [];
   const promovidas: string[] = [];
+  const prazoMs = opts.prazoMs ?? Number(process.env.AUTO_PRAZO_MS ?? 120_000);
+  let estourouPrazo = false;
   for (const m of metricas) {
+    if (Date.now() - t0 > prazoMs) {
+      estourouPrazo = true; // teto de tempo: as fontes restantes ficam para o próximo ciclo
+      break;
+    }
     const vigente = await perfilVigente(opts.store, m.fonteId);
-    const d = await decidir(vigente, m, async () => m);
+
+    // Só vale otimizar parâmetro de fonte que RESPONDEU. Avaliar vizinhos de uma
+    // fonte bloqueada (DJEN 403) ou em erro custa 4 requisições para chegar a
+    // "mantenha" — medido: ciclo de 90 s martelando portal. Bloqueio/deriva têm
+    // tratamento próprio; aqui a decisão é honesta e barata.
+    const saudavel = m.erros === 0 && m.captchas === 0 && m.itens > 0;
+    if (!saudavel) {
+      decisoes.push({
+        fonteId: m.fonteId,
+        acao: "manter",
+        scoreAtual: pontuar(m),
+        scoreNovo: pontuar(m),
+        motivo:
+          m.captchas > 0
+            ? "fonte exige captcha — parâmetros não resolvem; usar portal oficial"
+            : m.erros > 0
+              ? "fonte não respondeu neste ciclo — nada a otimizar"
+              : "fonte respondeu sem itens neste ciclo — nada a otimizar",
+        perfil: vigente,
+        anteriorVersao: vigente.versao,
+      });
+      continue;
+    }
+
+    // aqui está o coração: cada vizinho é MEDIDO com a sua configuração
+    const d = await decidir(
+      vigente,
+      m,
+      (cand) => medirCandidato(m.fonteId, cand, opts.termo ?? "João Carlos", agora),
+      { maxAvaliacoes: opts.maxAvaliacoes ?? 3 },
+    );
     decisoes.push(d);
     if (d.acao === "promover") {
       await opts.store.salvar(d.perfil, d);
@@ -106,6 +166,7 @@ export async function rodarCicloAuto(opts: CicloOpts): Promise<CicloResultado> {
     nuncaFuncionaram,
     msTotal: Date.now() - t0,
     erro: null,
+    ...(estourouPrazo ? { truncadoPorPrazo: true } : {}),
   };
 }
 

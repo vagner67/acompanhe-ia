@@ -224,3 +224,15 @@ describe("busca nacional — relatório de fontes", () => {
     expect(linhaCobertura(null)).toContain("91 tribunais");
   });
 });
+
+describe("perfil de coleta aplicado — transparência na tela", () => {
+  it("versão do perfil acompanha a linha da fonte quando existe", () => {
+    const [com, sem] = relatorioFontes([
+      { fonte: "esaj-sp", estado: "ok", itens: 3, perfilVersao: 4 },
+      { fonte: "djen", estado: "pulado", itens: 0 },
+    ]);
+    expect(com!.perfilVersao).toBe(4);
+    expect(sem!.perfilVersao).toBeUndefined();
+    expect(relatorioFontes([{ fonte: "x", estado: "ok", itens: 1, perfilVersao: 0 }])[0]!.perfilVersao).toBeUndefined();
+  });
+});

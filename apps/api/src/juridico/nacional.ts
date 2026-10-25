@@ -13,6 +13,7 @@
  *   - zero invenção: se nada respondeu, `itens: []` + motivos explícitos.
  */
 const soDigitos = (s: string) => s.replace(/\D+/g, "");
+import type { PerfilFonte } from "./autoaperfeicoamento.js";
 import { consultarEsaj, type ResultadoEsaj } from "./esaj.js";
 import { agruparDjenPorProcesso, buscarDjen, janelaPadrao, type DjenOpts, type EstadoDjen } from "./djen.js";
 import { UFS_ESAJ_ABERTAS, djenHabilitado, RODAPE_FROTA, type ResumoFrota, resumoFrota } from "./frota.js";
@@ -37,6 +38,8 @@ export interface FonteRelatorio {
   itens: number;
   ms: number;
   motivo?: string;
+  /** versão do perfil de coleta que foi REALMENTE usada nesta consulta */
+  perfilVersao?: number;
 }
 
 export interface ItemNacional {
@@ -79,6 +82,12 @@ export interface ConsultarNacionalOpts {
   indice?: (termo: string) => Promise<ItemNacional[]>;
   timeoutMs?: number;
   agora?: Date;
+  /**
+   * Perfis de coleta vigentes (saída do auto-aperfeiçoamento). Aqui eles são
+   * APLICADOS: timeout, concorrência, variante de nome e uso de relay.
+   * Sem perfil, vale o padrão da casa — nunca quebra a busca.
+   */
+  perfis?: Record<string, PerfilFonte | undefined>;
 }
 
 const PESOS: Record<string, number> = {
@@ -87,6 +96,32 @@ const PESOS: Record<string, number> = {
   nome_exato: 0.8,
   nome_parcial: 0.5,
 };
+
+/** Variante do termo de nome escolhida pelo auto-aperfeiçoamento (0 exato, 1 sem acento, 2 sobrenome+primeiro). */
+export function variarNome(termo: string, variante: 0 | 1 | 2): string {
+  if (variante === 0) return termo;
+  if (variante === 1) return termo.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const partes = termo.trim().split(/\s+/).filter(Boolean);
+  if (partes.length < 2) return termo;
+  return `${partes[partes.length - 1]} ${partes[0]}`;
+}
+
+/** Pool simples para respeitar a concorrência do perfil sem travar a resposta. */
+async function comConcorrencia<T, R>(itens: T[], limite: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const n = Math.max(1, Math.min(limite, itens.length || 1));
+  const out: R[] = new Array(itens.length);
+  let proximo = 0;
+  await Promise.all(
+    Array.from({ length: n }, async () => {
+      for (;;) {
+        const i = proximo++;
+        if (i >= itens.length) return;
+        out[i] = await fn(itens[i]!);
+      }
+    }),
+  );
+  return out;
+}
 
 const normalizar = (s: string) =>
   s
@@ -176,22 +211,32 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
     const campo = tipo === "nome" ? "NMPARTE" : "DOCPARTE";
     const buscarEsaj = opts.esaj ?? ((uf, t, v, p) => consultarEsaj(uf, t, v, p));
 
-    const resultados = await Promise.all(
-      ufs.map(async (uf) => {
+    // ── perfil aplicado ────────────────────────────────────────────────
+    const perfisEsaj = ufs.map((uf) => opts.perfis?.[`esaj-${uf}`]);
+    const perfil0 = perfisEsaj.find(Boolean);
+    const valorConsulta = tipo === "nome" ? variarNome(termo, perfil0?.varianteNome ?? 0) : termo;
+    const concorrencia = Math.max(1, Math.min(perfil0?.concorrencia ?? 4, 4));
+    const timeoutEsaj = perfil0?.timeoutMs ?? timeoutMs;
+
+    const resultados = await comConcorrencia(ufs, concorrencia, async (uf) => {
         const inicio = Date.now();
         // e-SAJ devolve erro intermitente sob concorrência (medido 25/10: mesma UF
         // alterna vazio/erro em requisições seguidas). Erro transitório merece
         // segunda tentativa com backoff; bloqueio/vazio NÃO se repetem.
-        let r = await comPrazo(buscarEsaj(uf, campo, termo, 1), timeoutMs);
+        let r = await comPrazo(buscarEsaj(uf, campo, valorConsulta, 1), timeoutEsaj);
         let tentativas = 1;
         const MAX_TENTATIVAS = 3;
         while (r.ok && r.valor.estado === "erro" && tentativas < MAX_TENTATIVAS) {
           await new Promise((res) => setTimeout(res, 300 * 3 ** (tentativas - 1))); // 300ms, 900ms
           tentativas++;
-          r = await comPrazo(buscarEsaj(uf, campo, termo, 1), timeoutMs);
+          r = await comPrazo(buscarEsaj(uf, campo, valorConsulta, 1), timeoutEsaj);
         }
         if (!r.ok) {
-          return { uf, fonte: `esaj-${uf}`, estado: "timeout" as EstadoFonteNacional, itens: 0, ms: Date.now() - inicio, motivo: r.motivo };
+          const v = opts.perfis?.[`esaj-${uf}`]?.versao;
+          return {
+            uf, fonte: `esaj-${uf}`, estado: "timeout" as EstadoFonteNacional, itens: 0,
+            ms: Date.now() - inicio, motivo: r.motivo, ...(v ? { perfilVersao: v } : {}),
+          };
         }
         const res = r.valor;
         // "multiplos" SEM itens não é sucesso: o e-SAJ respondeu "foram encontrados
@@ -213,9 +258,18 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
             : estado === "refinar"
               ? "muitos processos com esse termo — refine (nome completo, CPF ou nº)"
               : undefined;
-        return { uf, fonte: `esaj-${uf}`, estado, itens: res.itens.length, ms: Date.now() - inicio, res, ...(motivo ? { motivo } : {}) };
-      }),
-    );
+        const versao = opts.perfis?.[`esaj-${uf}`]?.versao;
+        return {
+          uf,
+          fonte: `esaj-${uf}`,
+          estado,
+          itens: res.itens.length,
+          ms: Date.now() - inicio,
+          res,
+          ...(motivo ? { motivo } : {}),
+          ...(versao ? { perfilVersao: versao } : {}),
+        };
+      });
 
     for (const r of resultados) {
       if ("res" in r && r.res) {
@@ -239,7 +293,15 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
           });
         }
       }
-      fontes.push({ fonte: r.fonte, tipo: "esaj", estado: r.estado, itens: r.itens, ms: r.ms, ...(r.motivo ? { motivo: r.motivo } : {}) });
+      fontes.push({
+        fonte: r.fonte,
+        tipo: "esaj",
+        estado: r.estado,
+        itens: r.itens,
+        ms: r.ms,
+        ...(r.motivo ? { motivo: r.motivo } : {}),
+        ...(r.perfilVersao ? { perfilVersao: r.perfilVersao } : {}),
+      });
     }
 
     // ── 3) DJEN: única fonte nacional por nome ──
@@ -260,7 +322,12 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
       const r = await comPrazo(
         chamarDjen(
           tipo === "nome" ? { nomeParte: termo, ...janela } : { numeroProcesso: termo, ...janela },
-          { ...(opts.djenOpts ?? {}) },
+          {
+            ...(opts.djenOpts ?? {}),
+            ...(opts.perfis?.["djen"]?.timeoutMs ? { timeoutMs: opts.perfis["djen"]!.timeoutMs } : {}),
+            // perfil pode desligar o relay (ex.: relay pior que o acesso direto)
+            ...(opts.perfis?.["djen"] && opts.perfis["djen"]!.usaRelay === false ? { relay: null } : {}),
+          },
         ),
         timeoutMs,
       );
@@ -289,7 +356,16 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
             motivoVinculo: v.motivo,
           });
         }
-        fontes.push({ fonte: "djen", tipo: "djen", estado, itens: res.itens.length, ms: Date.now() - inicio, ...(res.motivo ? { motivo: res.motivo } : {}) });
+        const versaoDjen = opts.perfis?.["djen"]?.versao;
+        fontes.push({
+          fonte: "djen",
+          tipo: "djen",
+          estado,
+          itens: res.itens.length,
+          ms: Date.now() - inicio,
+          ...(res.motivo ? { motivo: res.motivo } : {}),
+          ...(versaoDjen ? { perfilVersao: versaoDjen } : {}),
+        });
       }
     }
   }

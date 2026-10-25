@@ -43,7 +43,16 @@ const resultado: ResultadoNacional = {
   msTotal: 850,
 };
 
-function makeApp(over: { nacional?: typeof import("../src/juridico/nacional.js").consultarNacional; auto?: InMemoryPerfilStore } = {}) {
+function makeApp(
+  over: {
+    nacional?: typeof import("../src/juridico/nacional.js").consultarNacional;
+    auto?: InMemoryPerfilStore;
+    autoMedir?: {
+      medir?: (fontes: string[], termo: string, agora: string) => Promise<Metrica[]>;
+      medirCandidato?: (fonteId: string, perfil: import("../src/juridico/autoaperfeicoamento.js").PerfilFonte, termo: string, agora: string) => Promise<Metrica>;
+    };
+  } = {},
+) {
   const config = loadConfig({
     BOT_TOKEN: BOT,
     JWT_SECRET: "test-secret-0123456789abcdef",
@@ -63,6 +72,7 @@ function makeApp(over: { nacional?: typeof import("../src/juridico/nacional.js")
       indice: new InMemoryIndiceStore(),
       serviceToken: () => SERVICE,
       perfis,
+      ...(over.autoMedir ? { autoMedir: over.autoMedir } : {}),
       ...(over.nacional ? { nacional: over.nacional } : {}),
     },
     osint: { entitlements: ents },
@@ -157,16 +167,26 @@ describe("Rotas de operação — exigem token de serviço", () => {
   });
 
   it("POST /auto/ciclo: 401 sem token · responde estrutura completa com token", async () => {
-    const { app } = makeApp();
+    const { app } = makeApp({
+      autoMedir: {
+        medir: async (fontes) => fontes.map((f) => ({ ...metrica, fonteId: f })),
+        medirCandidato: async (fonteId) => ({ ...metrica, fonteId }),
+      },
+    });
     expect((await app.inject({ method: "POST", url: "/api/processos/auto/ciclo", payload: {} })).statusCode).toBe(401);
     const r = await app.inject({
       method: "POST", url: "/api/processos/auto/ciclo",
       headers: { "x-service-token": SERVICE }, payload: { termo: "João Carlos" },
     });
-    expect([200, 500]).toContain(r.statusCode); // rede real pode estar bloqueada no CI
-    expect(r.body.length).toBeGreaterThan(0);
+    expect(r.statusCode).toBe(200);
+    const corpo = r.json();
+    expect(corpo.ok).toBe(true);
+    expect(corpo.termo).toBe("João Carlos");
+    expect(Array.isArray(corpo.metricas)).toBe(true);
+    expect(Array.isArray(corpo.decisoes)).toBe(true);
+    expect(corpo.msTotal).toBeGreaterThanOrEqual(0);
     await app.close();
-  }, 90_000);
+  }, 30_000);
 
   it("token de serviço não vaza no corpo de erro", async () => {
     const { app } = makeApp();

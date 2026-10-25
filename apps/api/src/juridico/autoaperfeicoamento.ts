@@ -79,10 +79,20 @@ const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min)
  * aproveitamento é relativo ao melhor recall já visto → uma fonte pequena que responde
  * sempre ganha de uma grande que falha.
  */
+/**
+ * Recall mínimo que consideramos "aproveitamento pleno" no canário. Sem esse piso,
+ * uma fonte que devolve 1 item seria pontuada como 100% de aproveitamento (foi
+ * exatamente o que aconteceu quando o canário do e-SAJ voltou com 1 processo).
+ */
+export const RECALL_ESPERADO = 5;
+
 export function pontuar(m: Metrica): number {
   const consultas = Math.max(m.consultas, 1);
   const recall = m.itens / consultas;
-  const normalizador = Math.max(m.melhorRecall ?? recall, 1);
+  // Com histórico, o normalizador é o melhor recall JÁ VISTO daquela fonte (não
+  // punimos fonte naturalmente pequena). Sem histórico, o piso evita que 1 item
+  // isolado valha "aproveitamento pleno".
+  const normalizador = m.melhorRecall ?? Math.max(recall, RECALL_ESPERADO);
   const aproveitamento = Math.min(recall / normalizador, 1);
   const confiabilidade = 1 - Math.min((m.erros + m.timeouts) / consultas, 1);
   const penalidadeLentidao = 0.05 * (m.msP95 / 100);

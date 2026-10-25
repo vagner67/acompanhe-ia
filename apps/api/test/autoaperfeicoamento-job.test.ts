@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { InMemoryPerfilStore, DetectorDeriva, type Metrica } from "../src/juridico/autoaperfeicoamento.js";
+import { InMemoryPerfilStore, DetectorDeriva, PERFIL_PADRAO, type Metrica } from "../src/juridico/autoaperfeicoamento.js";
 import { iniciarAutoAperfeicoamento, rodarCicloAuto, scoreFrota } from "../src/jobs/autoaperfeicoamento.js";
 
 const metrica = (fonteId: string, p: Partial<Metrica> = {}): Metrica => ({
@@ -8,18 +8,35 @@ const metrica = (fonteId: string, p: Partial<Metrica> = {}): Metrica => ({
 });
 
 describe("Ciclo do job — de ponta a ponta com medição injetada", () => {
-  it("promove perfil que melhora e grava a nova versão no store", async () => {
+  it("promove quando um vizinho REALMENTE medido rende mais (o ganho do ciclo)", async () => {
+    const store = new InMemoryPerfilStore();
+    let avaliados = 0;
+    const r = await rodarCicloAuto({
+      store,
+      fontes: ["esaj-sp"],
+      medir: async () => [metrica("esaj-sp", { msP95: 28_000, itens: 1, canarioItens: 0 })],
+      // vizinho com timeout maior responde melhor — é o que o hill-climbing deve achar
+      medirCandidato: async (_f, cand) => {
+        avaliados++;
+        return cand.timeoutMs > PERFIL_PADRAO.timeoutMs
+          ? metrica("esaj-sp", { msP95: 400, itens: 12, canarioItens: 12, melhorRecall: 12 })
+          : metrica("esaj-sp", { msP95: 28_000, itens: 1, canarioItens: 0 });
+      },
+    });
+    expect(avaliados).toBeGreaterThan(1); // avaliou vários vizinhos de verdade
+    expect(r.promovidas).toEqual(["esaj-sp"]);
+    expect(r.decisoes[0]!.acao).toBe("promover");
+    expect((await store.obter("esaj-sp"))!.versao).toBeGreaterThan(1); // persistiu
+  });
+
+  it("empate real entre vizinhos mantém o perfil (histerese, sem flip-flop)", async () => {
     const store = new InMemoryPerfilStore();
     const r = await rodarCicloAuto({
       store,
       fontes: ["esaj-sp"],
-      // primeira medição fraca; o mesmo objeto é usado na avaliação dos vizinhos
-      medir: async () => [metrica("esaj-sp", { msP95: 28_000, itens: 1, canarioItens: 0 })],
+      medir: async () => [metrica("esaj-sp")],
+      medirCandidato: async () => metrica("esaj-sp"),
     });
-    expect(r.ok).toBe(true);
-    expect(r.decisoes).toHaveLength(1);
-    expect(r.msTotal).toBeGreaterThanOrEqual(0);
-    // com métrica idêntica para todos os vizinhos, empate → mantém (sem flip-flop)
     expect(r.promovidas).toEqual([]);
     expect(r.decisoes[0]!.acao).toBe("manter");
   });
@@ -42,6 +59,7 @@ describe("Ciclo do job — de ponta a ponta com medição injetada", () => {
       store: new InMemoryPerfilStore(),
       fontes: ["a", "b"],
       medir: async (fontes) => fontes.map((f) => metrica(f, f === "b" ? { erros: 5, captchas: 5, itens: 0, canarioItens: 0 } : {})),
+      medirCandidato: async (fonteId) => metrica(fonteId),
       registrarEvento: (e) => {
         eventos.push(e.tipo);
       },
@@ -56,11 +74,13 @@ describe("Ciclo do job — de ponta a ponta com medição injetada", () => {
     const eventos: Array<{ tipo: string; gravidade: string }> = [];
     let canario = 4; // 1º ciclo: funciona
     const medir = async (fontes: string[]) => fontes.map((f) => metrica(f, { canarioItens: canario, itens: canario }));
+    const medirCandidato = async (f: string) => metrica(f, { canarioItens: canario, itens: canario });
+    const evento = (e: { tipo: string; gravidade: string }) => { eventos.push(e); };
 
-    await rodarCicloAuto({ store, fontes: ["esaj-sp"], medir, detector, registrarEvento: (e) => { eventos.push(e); } });
+    await rodarCicloAuto({ store, fontes: ["esaj-sp"], medir, medirCandidato, detector, registrarEvento: evento });
     canario = 0; // a fonte "quebra" silenciosamente (HTML mudou)
-    await rodarCicloAuto({ store, fontes: ["esaj-sp"], medir, detector, registrarEvento: (e) => { eventos.push(e); } });
-    const terceiro = await rodarCicloAuto({ store, fontes: ["esaj-sp"], medir, detector, registrarEvento: (e) => { eventos.push(e); } });
+    await rodarCicloAuto({ store, fontes: ["esaj-sp"], medir, medirCandidato, detector, registrarEvento: evento });
+    const terceiro = await rodarCicloAuto({ store, fontes: ["esaj-sp"], medir, medirCandidato, detector, registrarEvento: evento });
 
     expect(terceiro.derivas).toEqual(["esaj-sp"]);
     expect(eventos.some((e) => e.tipo === "auto.deriva" && e.gravidade === "alerta")).toBe(true);
@@ -69,8 +89,9 @@ describe("Ciclo do job — de ponta a ponta com medição injetada", () => {
   it("fonte que nunca funcionou é reportada como tal (não como deriva)", async () => {
     const detector = new DetectorDeriva();
     const medir = async (fontes: string[]) => fontes.map((f) => metrica(f, { canarioItens: 0, itens: 0 }));
-    const r1 = await rodarCicloAuto({ store: new InMemoryPerfilStore(), fontes: ["esaj-nova"], medir, detector });
-    const r2 = await rodarCicloAuto({ store: new InMemoryPerfilStore(), fontes: ["esaj-nova"], medir, detector });
+    const medirCandidato = async (f: string) => metrica(f, { canarioItens: 0, itens: 0 });
+    const r1 = await rodarCicloAuto({ store: new InMemoryPerfilStore(), fontes: ["esaj-nova"], medir, medirCandidato, detector });
+    const r2 = await rodarCicloAuto({ store: new InMemoryPerfilStore(), fontes: ["esaj-nova"], medir, medirCandidato, detector });
     expect(r1.derivas).toEqual([]);
     expect(r2.nuncaFuncionaram).toEqual(["esaj-nova"]);
     expect(r2.derivas).toEqual([]);
@@ -129,5 +150,53 @@ describe("Agendador", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("Custo do ciclo — não martelar fonte quebrada", () => {
+  it("fonte bloqueada/em erro não gasta avaliações de vizinhos", async () => {
+    let avaliacoes = 0;
+    const r = await rodarCicloAuto({
+      store: new InMemoryPerfilStore(),
+      fontes: ["djen-quebrada"],
+      medir: async (fs) => fs.map((f) => metrica(f, { erros: 1, itens: 0, canarioItens: 0 })),
+      medirCandidato: async (f) => {
+        avaliacoes++;
+        return metrica(f);
+      },
+    });
+    expect(avaliacoes).toBe(0);
+    expect(r.decisoes[0]!.acao).toBe("manter");
+    expect(r.decisoes[0]!.motivo).toContain("não respondeu");
+  });
+
+  it("fonte saudável é otimizada de fato", async () => {
+    let avaliacoes = 0;
+    await rodarCicloAuto({
+      store: new InMemoryPerfilStore(),
+      fontes: ["esaj-al"],
+      medir: async (fs) => fs.map((f) => metrica(f, { itens: 5, canarioItens: 5 })),
+      medirCandidato: async (f) => {
+        avaliacoes++;
+        return metrica(f);
+      },
+      maxAvaliacoes: 3,
+    });
+    expect(avaliacoes).toBe(3); // respeita o teto configurado
+  });
+
+  it("presença de captcha mantém sem gastar avaliações", async () => {
+    let avaliacoes = 0;
+    const r = await rodarCicloAuto({
+      store: new InMemoryPerfilStore(),
+      fontes: ["tjmg"],
+      medir: async (fs) => fs.map((f) => metrica(f, { captchas: 1, itens: 0 })),
+      medirCandidato: async (f) => {
+        avaliacoes++;
+        return metrica(f);
+      },
+    });
+    expect(avaliacoes).toBe(0);
+    expect(r.decisoes[0]!.motivo).toContain("captcha");
   });
 });

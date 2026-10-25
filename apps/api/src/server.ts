@@ -12,6 +12,8 @@ import { InMemoryPaymentStore, type PaymentRecord, type PaymentStore } from "./s
 import { PushinpayClient, processPushinpayWebhook } from "./payments/pushinpay.js";
 import { InMemoryEntitlementsStore, type Entitlements } from "./entitlements.js";
 import { PrismaIndiceStore } from "./juridico/indice-prisma.js";
+import { PerfilStoreResiliente, PrismaPerfilStore } from "./juridico/perfil-prisma.js";
+import { InMemoryPerfilStore } from "./juridico/autoaperfeicoamento.js";
 import {
   PrismaEntitlements,
   PrismaLegalStore,
@@ -80,6 +82,18 @@ export interface AppDeps {
     nacional?: typeof import("./juridico/nacional.js").consultarNacional;
     /** Perfis do auto-aperfeiçoamento (memória ou Postgres). */
     perfis?: import("./juridico/autoaperfeicoamento.js").PerfilStore;
+    /** Medição do ciclo (injetável em teste, sem rede). */
+    autoMedir?: {
+      medir?: (fontes: string[], termo: string, agora: string) => Promise<import("./juridico/autoaperfeicoamento.js").Metrica[]>;
+      medirCandidato?: (
+        fonteId: string,
+        perfil: import("./juridico/autoaperfeicoamento.js").PerfilFonte,
+        termo: string,
+        agora: string,
+      ) => Promise<import("./juridico/autoaperfeicoamento.js").Metrica>;
+      maxAvaliacoes?: number;
+      prazoMs?: number;
+    };
   };
   admin?: { store?: AdminStore };
   minhas?: { store?: MinhasStore; ocr?: import("./minhas/service.js").OcrProvider };
@@ -278,6 +292,16 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
     deps.juridico?.store ?? (dbForStores ? new PrismaLegalStore(dbForStores) : new InMemoryLegalStore());
   // RF-B04 — alertas de movimentação: pipeline real (AlertEvent → worker → Telegram).
   const legalAlertSink: AlertSink = dbForStores ? new PrismaAlertSink(dbForStores) : new InMemoryAlertSink();
+  // Perfis de coleta do auto-aperfeiçoamento (plano-91-tribunais §5).
+  // UM store para o job E para as rotas: sem isso o ciclo aprendia num caderno
+  // que a busca nunca lia. Com banco -> Prisma (sobrevive a deploy).
+  const perfisStore: import("./juridico/autoaperfeicoamento.js").PerfilStore =
+    deps.juridico?.perfis ??
+    (dbForStores
+      ? new PerfilStoreResiliente(new PrismaPerfilStore(dbForStores), (m) => app.log.warn(m))
+      : new InMemoryPerfilStore());
+  // tipagem explícita do decorado (o projeto não usa augmentation do fastify)
+  (app as typeof app & { juridicoPerfis: typeof perfisStore }).juridicoPerfis = perfisStore;
   // Índice próprio do Jurídico (plano-refatoracao §6.2): Prisma quando há banco.
   const indiceStore: import("./juridico/indice.js").IndiceStore =
     deps.juridico?.indice ?? (dbForStores ? new PrismaIndiceStore(dbForStores) : new InMemoryIndiceStore());
@@ -294,7 +318,8 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
       indice: indiceStore,
       ...(deps.juridico?.serviceToken ? { serviceToken: deps.juridico.serviceToken } : {}),
       ...(deps.juridico?.nacional ? { nacional: deps.juridico.nacional } : {}),
-      ...(deps.juridico?.perfis ? { perfis: deps.juridico.perfis } : {}),
+      perfis: perfisStore,
+      ...(deps.juridico?.autoMedir ? { autoMedir: deps.juridico.autoMedir } : {}),
     }),
   );
   // Empréstimo (plano.md §5) — mesma porta. RE1: nenhuma rota move dinheiro.
@@ -471,9 +496,8 @@ async function main() {
   // Falha de fonte não derruba o processo: o job registra e tenta no próximo ciclo.
   if ((process.env.AUTO_HABILITADO ?? "1") !== "0") {
     const { iniciarAutoAperfeicoamento } = await import("./jobs/autoaperfeicoamento.js");
-    const { InMemoryPerfilStore } = await import("./juridico/autoaperfeicoamento.js");
     iniciarAutoAperfeicoamento({
-      store: new InMemoryPerfilStore(),
+      store: (app as typeof app & { juridicoPerfis: import("./juridico/autoaperfeicoamento.js").PerfilStore }).juridicoPerfis,
       onResultado: (r) => {
         app.log.info(
           {

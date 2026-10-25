@@ -219,6 +219,8 @@ export interface FonteNacionalLike {
   itens: number;
   ms?: number;
   motivo?: string;
+  /** versão do perfil de coleta aplicada (auto-aperfeiçoamento) */
+  perfilVersao?: number;
 }
 
 export interface LinhaFonte {
@@ -229,6 +231,7 @@ export interface LinhaFonte {
   itens: number;
   ms: number;
   tom: "ok" | "parcial" | "ruim";
+  perfilVersao?: number;
 }
 
 /** Normaliza o relatório de fontes para exibição direta (sem colapsar nada). */
@@ -249,6 +252,7 @@ export function relatorioFontes(fontes: FonteNacionalLike[] | null | undefined):
       itens: f.itens,
       ms: f.ms ?? 0,
       tom,
+      ...(f.perfilVersao ? { perfilVersao: f.perfilVersao } : {}),
     };
   });
 }

@@ -17,8 +17,8 @@ const perfil = (p: Partial<PerfilFonte> = {}): PerfilFonte => ({ fonteId: "esaj-
 const metrica = (m: Partial<Metrica> = {}): Metrica => ({
   fonteId: "esaj-sp",
   coletadaEm: "2026-10-25T03:00:00Z",
-  consultas: 10,
-  itens: 30,
+  consultas: 1,
+  itens: 10,
   erros: 0,
   captchas: 0,
   timeouts: 0,
@@ -43,15 +43,21 @@ describe("Pontuação — comparável e honesta", () => {
   });
 
   it("todos os erros → confiabilidade zero, sem número negativo absurdo", () => {
-    const s = pontuar(metrica({ erros: 10, consultas: 10, itens: 0, canarioItens: 0 }));
+    const s = pontuar(metrica({ erros: 1, consultas: 1, itens: 0, canarioItens: 0 }));
     expect(s).toBeLessThan(1);
     expect(Number.isFinite(s)).toBe(true);
   });
 
-  it("melhorRecall normaliza: 3 itens de fonte pequena não perde de 100 de fonte grande", () => {
+  it("fonte pequena com histórico próprio não é punida por uma fonte grande", () => {
     const pequena = pontuar(metrica({ itens: 3, canarioItens: 3, melhorRecall: 3 }));
     const grande = pontuar(metrica({ itens: 100, canarioItens: 100, melhorRecall: 100 }));
     expect(Math.abs(pequena - grande)).toBeLessThan(1);
+  });
+
+  it("1 item na primeira medição NÃO vale aproveitamento pleno (piso de recall)", () => {
+    const um = pontuar(metrica({ itens: 1, canarioItens: 1 }));
+    const cheio = pontuar(metrica({ itens: 10, canarioItens: 10 }));
+    expect(cheio - um).toBeGreaterThan(50);
   });
 });
 
