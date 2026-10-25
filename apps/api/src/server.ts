@@ -18,7 +18,6 @@ import {
   PrismaEntitlements,
   PrismaLegalStore,
   PrismaLoanStore,
-  PrismaMinhasStore,
   PrismaPaymentStore,
   PrismaSubscriptionsStore,
   PrismaVerificacaoStore,
@@ -39,10 +38,9 @@ import { PrismaAdminStore } from "./store-prisma.js";
 import { minhasRoutes } from "./routes/minhas.js";
 import { anotaRoutes } from "./routes/anota.js";
 import { filtrosRoutes, InMemoryFiltroStore, PrismaFiltroStore, type FiltroStore } from "./filtros.js";
-import { InMemoryMinhasStore, manualOcr, type MinhasStore } from "./minhas/service.js";
 import { InMemoryAnotaStore, type AnotaStore } from "./anota/store.js";
 import { PrismaAnotaStore } from "./anota/prisma.js";
-import { detectTesseract } from "./minhas/ocr.js";
+import { detectTesseract, manualOcr } from "./anota/ocr.js";
 import { InMemorySubscriptionsStore, type SubscriptionsStore } from "./assinaturas/service.js";
 import { OsintStore } from "./osint/store.js";
 import { PrismaStore } from "./osint/prisma-store.js";
@@ -102,10 +100,10 @@ export interface AppDeps {
     };
   };
   admin?: { store?: AdminStore };
-  minhas?: { store?: MinhasStore; ocr?: import("./minhas/service.js").OcrProvider };
   /** AnotA (controle financeiro) — store e provedor de e-mail injetáveis. */
   anota?: {
     store?: AnotaStore;
+    ocr?: import("./anota/ocr.js").OcrProvider;
     emailProvider?: import("./anota/email.js").EmailProvider | null;
     env?: Record<string, string | undefined>;
     fetchImpl?: typeof fetch;
@@ -131,6 +129,12 @@ export interface AppDeps {
   /** Overrides para testes do Investiga (fixture = saída real do sherlock). */
   osint?: {
     store?: InvestigaStore;
+    /** União Jurídico ↔ Investiga: busca jurídica injetável (teste) + UF/fetch. */
+    juridico?: {
+      buscar?: typeof import("./osint/juridico.js").buscarJuridicoDoCaso;
+      fetchImpl?: typeof fetch;
+      ufs?: string[];
+    };
     quota?: QuotaGate;
     entitlements?: Entitlements;
     sherlockExec?: SherlockExec;
@@ -278,6 +282,9 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
       entitlements,
       jwt,
       ...(deps.osint?.sherlockExec ? { sherlockExec: deps.osint.sherlockExec } : {}),
+      // União Jurídico ↔ Investiga (25/10): busca injetável em teste; em
+      // produção `buscarJuridicoDoCaso` usa as fontes reais do Jurídico.
+      ...(deps.osint?.juridico ? { juridico: deps.osint.juridico } : {}),
     }),
   );
 
@@ -341,6 +348,12 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
       ...(deps.juridico?.autoMedir ? { autoMedir: deps.juridico.autoMedir } : {}),
     }),
   );
+  // AnotA — criado aqui (e não mais abaixo) porque o empréstimo depende dele
+  // para a união de 25/10 (`/api/anota/emprestimos`): o contrato aceito vira
+  // lançamento no livro-caixa do usuário. Direção: empréstimo → AnotA, nunca o
+  // contrário (guarda de arquitetura em test/architecture.test.ts).
+  const anotaStore: AnotaStore =
+    deps.anota?.store ?? (dbForStores ? new PrismaAnotaStore(dbForStores) : new InMemoryAnotaStore());
   // Empréstimo (plano.md §5) — mesma porta. RE1: nenhuma rota move dinheiro.
   const loanStore: LoanStore =
     deps.emprestimos?.store ?? (dbForStores ? new PrismaLoanStore(dbForStores) : new InMemoryLoanStore());
@@ -352,12 +365,12 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
       jwt,
       store: loanStore,
       verificacao: verificacaoStore,
+      anota: { store: anotaStore },
     }),
   );
   // AnotA + assinaturas + filtros (plano §1.0/§1.1) — mesma porta Prisma.
   const subs: SubscriptionsStore =
     deps.assinaturas?.subs ?? (dbForStores ? new PrismaSubscriptionsStore(dbForStores) : new InMemorySubscriptionsStore());
-  const minhasStore: MinhasStore = deps.minhas?.store ?? (dbForStores ? new PrismaMinhasStore(dbForStores) : new InMemoryMinhasStore());
   const filtroStore: FiltroStore =
     deps.filtros?.store ?? (dbForStores ? new PrismaFiltroStore(dbForStores as never) : new InMemoryFiltroStore());
   // Painel do administrador (RBAC por operador + audit hash-chain + rules_config).
@@ -431,13 +444,11 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
         });
       }
     : null;
-  const anotaStore: AnotaStore =
-    deps.anota?.store ?? (dbForStores ? new PrismaAnotaStore(dbForStores) : new InMemoryAnotaStore());
   void app.register(
     anotaRoutes({
       jwt,
       store: anotaStore,
-      ocr: deps.minhas?.ocr ?? detectTesseract() ?? manualOcr,
+      ocr: deps.anota?.ocr ?? detectTesseract() ?? manualOcr,
       ...(deps.anota?.emailProvider !== undefined ? { emailProvider: deps.anota.emailProvider } : {}),
       ...(deps.anota?.env ? { env: deps.anota.env } : {}),
       ...(deps.anota?.fetchImpl ? { fetchImpl: deps.anota.fetchImpl } : {}),
@@ -446,7 +457,6 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
   void app.register(
     minhasRoutes({
       jwt,
-      store: minhasStore,
       loans: loanStore,
       verificacao: verificacaoStore,
       ...(upsertUser ? { upsertUser } : {}),

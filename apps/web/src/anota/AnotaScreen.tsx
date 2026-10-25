@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 import type { api, AnotaConta, AnotaResumo, NotaDto } from "../api2";
 import { Backup } from "./Backup";
+import { Emprestimos } from "./Emprestimos";
 import { Lancamentos } from "./Lancamentos";
 import { Planejar } from "./Planejar";
 import { Relatorio } from "./Relatorio";
@@ -20,13 +21,14 @@ interface Props {
   token: string;
   toast: (m: string) => void;
 }
-type Aba = "resumo" | "lancamentos" | "planejar" | "relatorio" | "notas" | "backup";
+type Aba = "resumo" | "lancamentos" | "planejar" | "relatorio" | "emprestimos" | "notas" | "backup";
 
 const ABAS: Array<{ id: Aba; rotulo: string }> = [
   { id: "resumo", rotulo: "🏠 Resumo" },
   { id: "lancamentos", rotulo: "💸 Lançamentos" },
   { id: "planejar", rotulo: "🎯 Planejar" },
   { id: "relatorio", rotulo: "📈 Relatório" },
+  { id: "emprestimos", rotulo: "🤝 Empréstimos" },
   { id: "notas", rotulo: "📝 Notas" },
   { id: "backup", rotulo: "📦 Backup" },
 ];
@@ -49,6 +51,7 @@ export function AnotaScreen({ a, toast }: Props) {
       {aba === "lancamentos" && <Lancamentos a={a} toast={toast} />}
       {aba === "planejar" && <Planejar a={a} toast={toast} />}
       {aba === "relatorio" && <Relatorio a={a} toast={toast} />}
+      {aba === "emprestimos" && <Emprestimos a={a} toast={toast} />}
       {aba === "notas" && <Notas a={a} toast={toast} />}
       {aba === "backup" && <Backup a={a} toast={toast} />}
     </>

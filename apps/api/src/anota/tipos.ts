@@ -11,7 +11,7 @@ export type TipoConta = "caixa" | "banco" | "cartao" | "poupanca";
 export type TipoCategoria = "despesa" | "receita";
 export type TipoLancamento = "despesa" | "receita";
 export type StatusLancamento = "pago" | "pendente";
-export type OrigemLancamento = "manual" | "csv" | "ofx";
+export type OrigemLancamento = "manual" | "csv" | "ofx" | "emprestimo";
 
 export const TIPOS_CONTA: readonly TipoConta[] = ["caixa", "banco", "cartao", "poupanca"];
 

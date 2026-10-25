@@ -112,6 +112,24 @@ export function JuridicoScreen({ a, toast }: Props) {
     };
   }, [fase === "buscar", a]);
 
+  // União Jurídico ↔ Investiga (25/10): a parte que a fonte devolveu vira caso OSINT.
+  const investigarParte = async (it: ItemUnificado) => {
+    if (!it.partes) {
+      toast("A fonte não devolveu o nome da parte neste processo — sem nome não há alvo");
+      return;
+    }
+    try {
+      const r = await a.invCasoDeProcesso({
+        numeroProcesso: it.numero,
+        nomeParte: it.partes,
+        uf: it.tribunal,
+      });
+      toast(`Caso criado no Investiga: ${r.case.title}`);
+    } catch (e) {
+      toast(`⚠ ${(e as Error).message}`);
+    }
+  };
+
   const tipo = detectarTipo(consulta);
   const lista = useMemo(() => unificarResultados(indice?.itens, terceiros, detalhes), [indice, terceiros, detalhes]);
   const contagens = useMemo(() => contarPorFonte(fontes), [fontes]);
@@ -512,6 +530,12 @@ export function JuridicoScreen({ a, toast }: Props) {
                       <span className="res-chev" aria-hidden="true">›</span>
                     </div>
                   </button>
+                  <div style={{ padding: "0 14px 8px" }}>
+                    <button className="link" onClick={() => void investigarParte(it)}>
+                      🔎 Investigar esta parte no Investiga
+                    </button>
+                    {!it.partes && <span className="tiny"> · a fonte não informou o nome da parte</span>}
+                  </div>
                 </li>
               ))}
             </ul>

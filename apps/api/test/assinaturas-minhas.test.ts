@@ -207,7 +207,7 @@ describe("AnotA — notas/lançamentos/resumo/CSV (contrato novo /api/anota)", (
 
 describe("OCR real (tesseract) — só se o binário existir no host", () => {
   it("extrai texto de PNG gerado (PIL) sem inventar nada", async () => {
-    const { detectTesseract } = await import("../src/minhas/ocr.js");
+    const { detectTesseract } = await import("../src/anota/ocr.js");
     const ocr = detectTesseract();
     if (!ocr) {
       console.warn("[ocr] tesseract ausente — teste pulado com aviso honesto");

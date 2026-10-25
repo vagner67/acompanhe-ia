@@ -88,6 +88,8 @@ export function InvestigaScreen({ a, toast }: P) {
   const [alvo, setAlvo] = useState("");
   const [saida, setSaida] = useState("");
   const [quota, setQuota] = useState("");
+  // União com o Jurídico (25/10): processos reais achados por nome/documento do alvo
+  const [juridico, setJuridico] = useState<Record<string, { carregando: boolean; texto: string; itens: Array<{ numeroProcesso: string; classe: string | null; nomeParte: string | null; participacao: string | null; fonte: string; url: string }> }>>({});
   useEffect(() => {
     a.invCasos().then((r) => setCasos(r.cases)).catch(() => void 0);
     a.invQuota().then((r) => setQuota(`${r.window.used}/${r.window.limit}`)).catch(() => void 0);
@@ -128,15 +130,61 @@ export function InvestigaScreen({ a, toast }: P) {
       <div className="card">
         <h3>Meus casos</h3>
         {casos.length === 0 && <div className="empty">Nenhum caso ainda — crie o primeiro acima.</div>}
-        {casos.map((c) => (
-          <div className="list-item" key={c.id}>
-            <div>
-              <b>{c.title}</b>
-              <div className="tiny mono">{c.id}</div>
+        {casos.map((c) => {
+          const j = juridico[c.id];
+          return (
+            <div key={c.id} style={{ marginBottom: 10 }}>
+              <div className="list-item">
+                <div>
+                  <b>{c.title}</b>
+                  <div className="tiny mono">{c.id}</div>
+                </div>
+                <div className="row">
+                  <button className="btn sm ghost" onClick={() => setDoc((d) => d || c.id)}>usar</button>
+                  <button
+                    className="btn sm"
+                    disabled={j?.carregando}
+                    onClick={async () => {
+                      setJuridico((s) => ({ ...s, [c.id]: { carregando: true, texto: "", itens: [] } }));
+                      try {
+                        const r = await a.invJuridicoBuscar(c.id);
+                        const itens = r.porAlvo.flatMap((x) => x.itens);
+                        const texto =
+                          r.porAlvo.length === 0
+                            ? "este caso não tem alvo consultável no Jurídico"
+                            : `${itens.length} processo(s) · ${r.gravados} achado(s) gravados` +
+                              (r.avisos.length ? ` · avisos: ${r.avisos.join(", ")}` : "");
+                        setJuridico((s) => ({ ...s, [c.id]: { carregando: false, texto, itens } }));
+                        toast(itens.length > 0 ? `⚖️ ${itens.length} processo(s) encontrados` : "Jurídico: nada encontrado (veja o aviso)");
+                      } catch (e) {
+                        setJuridico((s) => ({ ...s, [c.id]: { carregando: false, texto: (e as Error).message, itens: [] } }));
+                        toast(`⚠ ${(e as Error).message}`);
+                      }
+                    }}
+                  >
+                    {j?.carregando ? "consultando…" : "⚖️ Buscar processos (Jurídico)"}
+                  </button>
+                </div>
+              </div>
+              {j && !j.carregando && (
+                <div className="banner" style={{ marginTop: 6 }}>
+                  <div className="tiny">{j.texto}</div>
+                  {j.itens.slice(0, 8).map((p) => (
+                    <div className="tiny" key={p.numeroProcesso + p.fonte}>
+                      <a href={p.url} target="_blank" rel="noreferrer" className="mono">
+                        {p.numeroProcesso}
+                      </a>
+                      {p.classe ? ` · ${p.classe}` : ""}
+                      {p.nomeParte ? ` · ${p.nomeParte}` : ""}
+                      {p.participacao ? ` (${p.participacao})` : ""}
+                      {` · ${p.fonte}`}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <button className="btn sm ghost" onClick={() => setDoc((d) => d || c.id)}>usar</button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="card">

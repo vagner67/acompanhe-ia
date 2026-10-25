@@ -104,6 +104,17 @@ export function api(token: string) {
     anotaNotaExcluir: (id: string) => del(`/api/anota/notas/${id}`),
     anotaBackupEstado: () => get<AnotaBackupEstado>("/api/anota/backup"),
     anotaBackupEnviar: (email: string) => post<AnotaBackupResposta>("/api/anota/backup", { email }),
+    anotaEmprestimos: () => get<AnotaEmprestimosResp>("/api/anota/emprestimos"),
+    anotaEmprestimoLancar: (matchId: string, extra: { contaId?: string | null; categoria?: string } = {}) =>
+      post<{ criados: number; jaExistiam: number; totalParcelas: number; totalCents: number }>(
+        `/api/anota/emprestimos/${matchId}/lancar`,
+        extra,
+      ),
+    anotaEmprestimoPagamentoLancar: (matchId: string, paymentId: string) =>
+      post<{ acao: string; viaParcela: boolean; lancamentoId: string | null }>(
+        `/api/anota/emprestimos/${matchId}/pagamentos/${paymentId}/lancar`,
+        {},
+      ),
     anotaBackupArquivo: () => fetch(`${BASE}/api/anota/backup/arquivo`, { headers: headers(token) }).then((r) => r.blob()),
     verificacao: () => get<{ status: string; level: string | null; campos: unknown | null }>("/api/minhas/verificacao"),
     verificacaoEnviar: (campos: { docTipo: "cnh" | "rg" | "cpf" | "passaporte"; selfieAt?: string }) => post<{ ok: boolean }>("/api/minhas/verificacao", campos),
@@ -122,6 +133,19 @@ export function api(token: string) {
       post<{ monthlyCents: number; note: string }>(`/v1/investiga/cases/${caseId}/estimativa`, { nome: alvo }),
     invAlerta: (caseId: string, nome: string) =>
       post<{ monitor: { topic: string } }>(`/v1/investiga/cases/${caseId}/monitor`, { nome, topic: `osint_${caseId}` }),
+    // União com o Jurídico (25/10)
+    invJuridicoBuscar: (caseId: string) => post<JuridicoDoCasoResp>(`/v1/investiga/cases/${caseId}/juridico`, {}),
+    invJuridicoListar: (caseId: string) =>
+      get<{ casoId: string; total: number; achados: Array<{ id: string; sourceId: string; summary?: string; evidenceUrl?: string }>; processos: string[] }>(
+        `/v1/investiga/cases/${caseId}/juridico`,
+      ),
+    invCasoDeProcesso: (p: { numeroProcesso: string; nomeParte: string; uf?: string | null; participacao?: string | null }) =>
+      post<{ case: { id: string; title: string } }>("/v1/investiga/cases/from-processo", {
+        numeroProcesso: p.numeroProcesso,
+        nomeParte: p.nomeParte,
+        ...(p.uf ? { uf: p.uf } : {}),
+        ...(p.participacao ? { participacao: p.participacao } : {}),
+      }),
     invDeepDive: (caseId: string, nome: string, extra?: unknown) =>
       post<{ relatorio: string; findings: number }>(`/v1/investiga/cases/${caseId}/deep-dive`, { nome, ...(extra ? { extra } : {}) }),
     // —— Licitações ——
@@ -456,6 +480,64 @@ export interface AnotaBackupResposta {
   erro?: string;
   instrucao?: string;
   downloadDisponivel?: string;
+}
+
+
+// ————— União AnotA × Empréstimo (25/10) —————
+export interface AnotaContratoEmprestimo {
+  matchId: string;
+  papel: "devedor" | "credor";
+  motivo: string;
+  principalCents: number;
+  jurosCents: number;
+  totalCents: number;
+  parcelaCents: number;
+  meses: number;
+  jurosMesBps: number;
+  baseEm: string;
+  proximoVencimento: string | null;
+  parcelasLancadas: number;
+  parcelasTotal: number;
+  pagoCents: number;
+  declaradoCents: number;
+  emAbertoCents: number;
+  pagamentos: Array<{ id: string; valorCents: number; status: "declared" | "confirmed" | "disputed"; declaredAt: string; noAnotA: boolean }>;
+}
+export interface AnotaEmprestimosResp {
+  contratos: AnotaContratoEmprestimo[];
+  aPagarCents: number;
+  aReceberCents: number;
+  matchesAceitos: number;
+  matchesTotal: number;
+}
+
+// ————— União Jurídico × Investiga (25/10) —————
+export interface JuridicoAlvoResp {
+  alvo: { kind: string; value: string };
+  tipo: "nome" | "cpf" | "cnpj" | null;
+  estado: string;
+  fontes: Array<{ fonte: string; estado: string; total: number | null; itens: number }>;
+  itens: Array<{
+    numeroProcesso: string;
+    uf: string;
+    classe: string | null;
+    assunto: string | null;
+    nomeParte: string | null;
+    participacao: string | null;
+    foro: string | null;
+    dataDistribuicao: string | null;
+    fonte: string;
+    url: string;
+  }>;
+  avisos: string[];
+}
+export interface JuridicoDoCasoResp {
+  casoId: string;
+  porAlvo: JuridicoAlvoResp[];
+  gravados: number;
+  achados: Array<{ id: string; sourceId: string; status: string; summary?: string; evidenceUrl?: string }>;
+  avisos: string[];
+  error?: string;
 }
 
 export interface NotaDto {

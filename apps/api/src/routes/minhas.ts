@@ -12,7 +12,6 @@ import { z } from "zod";
 import type { JwtService } from "../security/jwt.js";
 import type { LoanStore } from "../emprestimos/service.js";
 import type { VerificacaoStore as VerStore } from "../emprestimos/verificacao.js";
-import type { MinhasStore } from "../minhas/service.js";
 
 const verificacaoSchema = z.object({
   docTipo: z.enum(["cnh", "rg", "cpf", "passaporte"]),
@@ -23,7 +22,6 @@ const perfilSchema = z.object({ uf: z.string().length(2), cityIbge: z.number().i
 
 export function minhasRoutes(deps: {
   jwt: JwtService;
-  store: MinhasStore;
   loans: LoanStore;
   verificacao: VerStore;
   upsertUser?: (userId: string, p: { uf: string; cityIbge: number }) => Promise<void>;

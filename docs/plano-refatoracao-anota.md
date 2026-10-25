@@ -277,3 +277,35 @@ explícito quando o servidor não tem provedor e histórico de envios com status
 - **Envio de e-mail em produção**: o Render hoje **não tem** `SMTP_*` nem `RESEND_*`. A tela
   avisa e o ZIP sai por download; ao configurar SMTP/Resend o mesmo botão passa a enviar.
 - **`SMTP_*` e `RESEND_*` não foram inventados** em env nenhum — nada de credencial de mentira.
+
+### 9.6 Acoplamento que sobrou — e foi cortado (25/10, depois da entrega)
+
+Na primeira entrega o AnotA já tinha rota, store e tela próprios, mas **ainda dependia de código
+físico do módulo de empréstimos**:
+
+- `routes/anota.ts` importava `OcrProvider` e `manualOcr` de `src/minhas/service.ts`;
+- `server.ts` montava o OCR do AnotA a partir de `src/minhas/ocr.ts` (`detectTesseract`);
+- `src/minhas/service.ts` e `PrismaMinhasStore` (em `store-prisma.ts`) eram o store antigo de
+  notas/gastos — código **do AnotA morando dentro do módulo de empréstimos**;
+- `minhasRoutes` recebia `store: MinhasStore` e **nunca usava** o parâmetro.
+
+Cortado: o OCR foi para `apps/api/src/anota/ocr.ts` (porta + `manualOcr` + `TesseractOcr`),
+`src/minhas/` foi **removido**, `PrismaMinhasStore` foi apagado (o AnotA já tem
+`PrismaAnotaStore`) e `minhasRoutes` ficou só com `jwt`, `loans`, `verificacao`, `upsertUser`.
+Empréstimo, verificação e perfil seguem com o mesmo comportamento — nenhuma rota mudou.
+
+Para não voltar por descuido, duas regras entraram no `test/architecture.test.ts`:
+
+1. nada em `apps/api/src/anota/` pode importar `emprestimos/`, `juridico/`, `licitacoes`,
+   `concursos`, `osint/`, `nucleo/`, `routes/minhas` ou `minhas/`;
+2. `apps/api/src/minhas` não existe e nenhuma rota importa de lá.
+
+Resultado depois do corte: `tsc -b --force` 0 erros, suíte da API **552 ✔ / 1 skip**
+(`architecture.test.ts` foi de 7 para 9 testes), `anota.test.ts` **37 ✔**,
+E2E **22/22**.
+
+**Estado da separação:** AnotA e empréstimo são produtos separados em rota, domínio, store e
+tela (abas “AnotA” e “Empréstimos” no app). O único elo que existe é de **dado**, não de código:
+`GET /api/minhas/dividas` (Caderno de Dívidas) e o AnotA olham o mesmo usuário — se um dia as
+parcelas do empréstimo tiverem de aparecer como despesa no AnotA, isso entra como integração
+explícita, com teste, e não como import cruzado.

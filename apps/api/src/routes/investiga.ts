@@ -33,6 +33,8 @@ import type { InvestigaStore } from "../osint/store.js";
 import type { SherlockExec } from "../osint/sherlock.js";
 import { sha256Hex } from "../osint/hash.js";
 import type { OsintTargetKind } from "@acompanhe/shared";
+import { buscarJuridicoDoCaso, casoAPartirDeProcesso } from "../osint/juridico.js";
+import { PLANS_WITH_JURIDICA } from "./processos.js";
 
 /** 24/10: documento digitado no app → kind de alvo real (sem inventar tipo). */
 function inferTargetKind(value: string): OsintTargetKind {
@@ -81,6 +83,16 @@ export function investigaRoutes(deps: {
   jwt: JwtService;
   /** Injeção para testes (fixture = saída real capturada do sherlock). */
   sherlockExec?: SherlockExec;
+  /**
+   * União com o Jurídico (25/10). `buscar` é injetável para teste (as fixtures
+   * reais do e-SAJ já estão em test/fixtures/esaj); em produção usa a busca de
+   * verdade (`pesquisarTerceiros`).
+   */
+  juridico?: {
+    buscar?: typeof buscarJuridicoDoCaso;
+    fetchImpl?: typeof fetch;
+    ufs?: string[];
+  };
 }): (app: FastifyInstance) => Promise<void> {
   const { config, quota, entitlements, jwt } = deps;
   const service = makeInvestigaService({
@@ -300,6 +312,99 @@ export function investigaRoutes(deps: {
           .header("content-type", "application/pdf")
           .header("content-disposition", `attachment; filename="investiga-${id}.pdf"`)
           .send(pdf);
+      } catch (e) {
+        return httpFail(reply, e);
+      }
+    });
+
+    // ————— União Jurídico ↔ Investiga (25/10) —————
+    // Investiga → Jurídico: os alvos do caso vão para as fontes jurídicas reais
+    // (e-SAJ por nome/CPF/CNPJ + DataJud por CNJ) e voltam como achados com
+    // proveniência. Gating duplo: o caso tem de ser seu (Investiga) e a conta
+    // precisa do plano Jurídico.
+    app.post<{ Params: { id: string } }>("/v1/investiga/cases/:id/juridico", async (req, reply) => {
+      const subjectId = await requireSubject(req);
+      if (!subjectId) return reply.code(401).send({ error: "não autenticado" });
+      const caso = await deps.store.getCase(req.params.id);
+      if (!caso || caso.subjectId !== subjectId) return reply.code(404).send({ error: "caso não encontrado" });
+      if (!(await entitlements.isEntitled(subjectId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({
+          error: "plano Consulta Jurídica ativo é necessário para consultar as fontes do Jurídico",
+          rule: "v2/08 §9.5",
+        });
+      }
+      const buscar = deps.juridico?.buscar ?? buscarJuridicoDoCaso;
+      const r = await buscar(caso, {
+        ...(deps.juridico?.fetchImpl ? { fetchImpl: deps.juridico.fetchImpl } : {}),
+        ...(deps.juridico?.ufs ? { ufs: deps.juridico.ufs } : {}),
+      });
+      const gravados = r.achados.length > 0 ? await deps.store.addFindings(r.achados) : [];
+      return reply.send({
+        casoId: caso.id,
+        porAlvo: r.porAlvo,
+        gravados: gravados.length,
+        achados: gravados,
+        avisos: r.avisos,
+        rule: "juridico→investiga (status da fonte traduzido, nunca arredondado)",
+      });
+    });
+
+    app.get<{ Params: { id: string } }>("/v1/investiga/cases/:id/juridico", async (req, reply) => {
+      const subjectId = await requireSubject(req);
+      if (!subjectId) return reply.code(401).send({ error: "não autenticado" });
+      const caso = await deps.store.getCase(req.params.id);
+      if (!caso || caso.subjectId !== subjectId) return reply.code(404).send({ error: "caso não encontrado" });
+      const todos = await deps.store.listFindingsForCase(caso.id);
+      const juridicos = todos.filter((f) => f.sourceId.startsWith("juridico:"));
+      return reply.send({
+        casoId: caso.id,
+        total: juridicos.length,
+        achados: juridicos,
+        processos: [
+          ...new Set(
+            juridicos
+              .map((f) => (f.raw as { numeroProcesso?: string } | undefined)?.numeroProcesso)
+              .filter((n): n is string => typeof n === "string"),
+          ),
+        ],
+      });
+    });
+
+    // Jurídico → Investiga: processo com parte identificada abre caso OSINT.
+    // A criação passa pelo serviço (entitlement do Investiga + limite de casos
+    // ativos) — a regra não é duplicada aqui.
+    app.post("/v1/investiga/cases/from-processo", async (req: FastifyRequest, reply: FastifyReply) => {
+      const subjectId = await requireSubject(req);
+      if (!subjectId) return reply.code(401).send({ error: "não autenticado" });
+      const body = z
+        .object({
+          numeroProcesso: z.string().min(7).max(30),
+          nomeParte: z.string().min(3).max(320),
+          uf: z.string().min(2).max(10).nullish(),
+          participacao: z.string().max(80).nullish(),
+          baseLegal: z.string().min(10).max(500).nullish(),
+          finalidade: z.string().min(10).max(500).nullish(),
+          titulo: z.string().min(3).max(120).nullish(),
+        })
+        .parse(req.body);
+      const entrada = casoAPartirDeProcesso({
+        numeroProcesso: body.numeroProcesso,
+        nomeParte: body.nomeParte,
+        ...(body.uf !== undefined ? { uf: body.uf } : {}),
+        ...(body.participacao !== undefined ? { participacao: body.participacao } : {}),
+        ...(body.baseLegal !== undefined ? { baseLegal: body.baseLegal } : {}),
+        ...(body.finalidade !== undefined ? { finalidade: body.finalidade } : {}),
+        ...(body.titulo !== undefined ? { titulo: body.titulo } : {}),
+      });
+      if (!entrada) {
+        return reply.code(422).send({
+          error: "a fonte não devolveu parte identificável neste processo — sem nome não há alvo para investigar",
+          rule: "nada de alvo inventado",
+        });
+      }
+      try {
+        const rec = await service.createCase(subjectId, entrada as CreateCaseInput);
+        return reply.code(201).send({ case: rec, origem: "juridico", processo: body.numeroProcesso, rule: "processo → caso OSINT" });
       } catch (e) {
         return httpFail(reply, e);
       }

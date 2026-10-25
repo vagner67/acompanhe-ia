@@ -41,8 +41,8 @@ import {
   TIPOS_CONTA,
 } from "../anota/tipos.js";
 import { criarZip } from "../anota/zip.js";
-import type { OcrProvider } from "../minhas/service.js";
-import { manualOcr } from "../minhas/service.js";
+import type { OcrProvider } from "../anota/ocr.js";
+import { manualOcr } from "../anota/ocr.js";
 import type { JwtService } from "../security/jwt.js";
 
 /** `exactOptionalPropertyTypes` está ligado: patch com chave `undefined` não é

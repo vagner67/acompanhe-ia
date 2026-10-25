@@ -56,6 +56,57 @@ describe("limites de pacote (docs/arquitetura.md §Pacotes)", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("AnotA é um produto isolado: nada de anota/ importa empréstimos, jurídico, licitações, concursos, OSINT ou núcleo", () => {
+    const proibidos = ["/emprestimos/", "/juridico/", "/licitacoes", "/concursos", "/osint/", "/nucleo/", "/routes/minhas", "/minhas/"];
+    const offenders = filesIn("apps/api/src/anota").flatMap((file) =>
+      importsOf(file)
+        .filter((spec) => proibidos.some((p) => spec.includes(p)))
+        .map((spec) => `${rel(file)} → ${spec}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("união AnotA↔Empréstimo passa por UMA ponte: só emprestimos/ponte-anota.ts e routes/emprestimos.ts tocam o AnotA", () => {
+    const offenders = filesIn("apps/api/src/emprestimos").flatMap((file) => {
+      const nome = rel(file);
+      if (nome.endsWith("/emprestimos/ponte-anota.ts")) return [];
+      return importsOf(file)
+        .filter((spec) => spec.includes("/anota/"))
+        .map((spec) => `${nome} → ${spec}`);
+    });
+    expect(offenders).toEqual([]);
+    // e a direção contrária continua proibida (regra acima, guardada de novo aqui)
+    const volta = filesIn("apps/api/src/anota").flatMap((file) =>
+      importsOf(file)
+        .filter((spec) => spec.includes("/emprestimos/"))
+        .map((spec) => `${rel(file)} → ${spec}`),
+    );
+    expect(volta).toEqual([]);
+  });
+
+  it("união Jurídico↔Investiga também tem ponte única (osint/juridico.ts)", () => {
+    const offenders = filesIn("apps/api/src/osint").flatMap((file) => {
+      const nome = rel(file);
+      if (nome.endsWith("/osint/juridico.ts")) return [];
+      return importsOf(file)
+        .filter((spec) => spec.includes("/juridico/"))
+        .map((spec) => `${nome} → ${spec}`);
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it("o módulo de empréstimos/perfil não carrega mais código do AnotA (src/minhas não existe)", () => {
+    // notas, gastos, resumo, CSV e OCR viveram em apps/api/src/minhas até 25/10;
+    // o diretório foi removido e as rotas antigas viraram apelidos em anota.ts.
+    expect(readdirSyncExists(path.join(repoRoot, "apps/api/src/minhas"))).toBe(false);
+    const offenders = filesIn("apps/api/src/routes").flatMap((file) =>
+      importsOf(file)
+        .filter((spec) => spec.includes("/minhas/"))
+        .map((spec) => `${rel(file)} → ${spec}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it("domínio é framework-free: service.ts e jobs/ não importam fastify (routes.ts pode)", () => {
     const domain = [
       ...filesIn("apps/api/src/gamificacao"),
