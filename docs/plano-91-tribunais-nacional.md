@@ -250,3 +250,26 @@ FROTA 200 — 91 tribunais; número 91/91; nome/CPF 4 (e-SAJ aberto); djen false
 ### 9.6 Limite que permanece declarado (não maquiado)
 
 Busca por **nome/CPF** em 91/91 exige o DJEN, e o DJEN responde **403 fora do Brasil** (medido 4×, inclusive via `r.jina.ai`). O código já suporta `DJEN_RELAY_URL` (egress BR) e a fonte aparece como `pulado` com o motivo, nunca como "nenhum resultado". Sem esse relay, cobertura real por nome é **4 UFs** (e-SAJ aberto) + índice próprio.
+
+### 9.7 Produção (`https://acompanhe.onrender.com`, deploy `697148f`, 25/10 03h56)
+
+```
+1) login: 200 (184ms)
+3) /frota: 200 | 91 tribunais | nome cobertos: 4 | djen: false
+4) /nacional "João Carlos": 200 (1005ms) | 37 itens
+     indice vazio | esaj-al ok 25 | esaj-sp refinar | esaj-ac ok 12 | esaj-ce refinar | djen pulado
+5) /nacional nº 0006903-69.2014.8.11.0037: 200 | tipo cnj | 1 item
+6) /auto: 200 | 5 perfis | ε=3
+7) /auto/ciclo: 200 (1901ms) | ok | al 25 itens, ac 12, djen erros=1 (403)
+   termo curto "José": 0 itens + aviso "e-SAJ AL, e-SAJ SP, e-SAJ AC, e-SAJ CE responderam
+   'muitos processos' — refine a busca (nome completo, CPF ou nº do processo)"
+E2E produção 390×844: RESULTADOS {itens: 37, foot: "37 processo(s) · E-SAJ AL, E-SAJ AC"},
+   details: 0, aria-expanded: 0, PLACEHOLDER cabe: true
+```
+
+### 9.8 O que continua faltando para 91/91 por nome (dito sem rodeio)
+
+1. **DJEN exige egress brasileiro** (`DJEN_RELAY_URL`). Com ele, nome/CPF passam de 4 UFs para 91.
+2. **Captcha** nos portais PJe/Projudi/STJ: não burlamos — oferecemos o portal oficial.
+3. **e-SAJ com termo curto** responde "muitos processos": o produto agora pede refinamento em vez de mentir "0 resultados".
+4. **Auto-aperfeiçoamento** hoje otimiza parâmetros por fonte com canário. Próximo passo natural (não implementado, para não prometer): variantes de URL/seletor por família (e-SAJ/PJe) e promoção automática de canário novo quando a deriva é detectada.
