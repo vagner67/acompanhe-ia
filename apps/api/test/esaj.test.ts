@@ -103,3 +103,25 @@ describe("URLs do contrato verificado", () => {
     expect(ESAJ_BASES.sp).toBe("https://esaj.tjsp.jus.br");
   });
 });
+
+describe("TJAC e TJCE — fixtures REAIS (cobertura: 4 bases verificadas em 24/10/2026)", () => {
+  it("ESAJ_BASES = ac, al, ce, sp (todas verificadas ao vivo)", () => {
+    expect(Object.keys(ESAJ_BASES).sort()).toEqual(["ac", "al", "ce", "sp"]);
+  });
+
+  it("TJAC: RESULTADOS reais com nº CNJ/J=8.01 e VAZIO real", () => {
+    const r = parseResultadosEsaj(ler("tjac-nmparte.html"), "ac", 1);
+    expect(r.estado).toBe("resultados");
+    expect(r.itens.length).toBeGreaterThan(0);
+    expect(r.itens[0]!.numeroProcesso).toMatch(/^\d{7}-\d{2}\.\d{4}\.8\.01\.\d{4}$/);
+    expect(parseResultadosEsaj(ler("tjac-nmparte-vazio.html"), "ac", 1).estado).toBe("vazio");
+  });
+
+  it("TJCE: RESULTADOS reais com nº CNJ/J=8.06 e VAZIO real", () => {
+    const r = parseResultadosEsaj(ler("tjce-nmparte.html"), "ce", 1);
+    expect(r.estado).toBe("resultados");
+    expect(r.itens.length).toBeGreaterThan(0);
+    expect(r.itens[0]!.numeroProcesso).toMatch(/^\d{7}-\d{2}\.\d{4}\.8\.06\.\d{4}$/);
+    expect(parseResultadosEsaj(ler("tjce-nmparte-vazio.html"), "ce", 1).estado).toBe("vazio");
+  });
+});

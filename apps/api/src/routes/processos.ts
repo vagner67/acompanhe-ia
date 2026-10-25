@@ -9,7 +9,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { makeJuridicoService, RODAPE_INFORMATIVO, type LegalStore } from "../juridico/service.js";
-import { isValidCnj, aliasFromTribunal, parseCnj, formatCnj } from "../juridico/cnj.js";
+import { isValidCnj, aliasFromTribunal, aliasCandidatesFromCnj, parseCnj, formatCnj } from "../juridico/cnj.js";
 import { detectarConsulta } from "../juridico/deteccao.js";
 import { mapDoc } from "../juridico/service.js";
 import { responderPergunta, resumoProcesso } from "../juridico/assistente.js";
@@ -129,20 +129,39 @@ export function processosRoutes(deps: ProcessosDeps) {
       const decoded = decodeURIComponent(q.cnj);
       if (!isValidCnj(decoded)) return reply.code(422).send({ error: "número CNJ inválido (DV Res. 65/2008)", rule: "RF-B01" });
       const parts = parseCnj(decoded)!;
-      const alias = q.alias ?? aliasFromTribunal(parts.justica, parts.tribunal);
-      if (!alias) return reply.code(422).send({ error: "alias do tribunal desconhecido — informe alias", rule: "RF-B02" });
+      // 91 tribunais: a corte do (J,TR) + a superior do ramo (superiores guardam
+      // números de ORIGEM; 5.01 = TRT1 e TST convivem) — mapa verificado 24/10/2026.
+      const candidatos = q.alias ? [q.alias] : aliasCandidatesFromCnj(parts.justica, parts.tribunal);
+      if (candidatos.length === 0) {
+        return reply.code(422).send({
+          error: parts.justica === "1"
+            ? "STF não publica no DataJud (os 91 índices públicos não incluem o STF) — consulte em https://portal.stf.jus.br/processos/"
+            : "tribunal sem índice público conhecido — informe alias",
+          rule: "RF-B02",
+        });
+      }
       const fetchProcessos = deps.datajud ?? (await import("../juridico/datajud.js")).fetchProcessos;
-      const docs = await fetchProcessos(alias, { numeroProcesso: formatCnj(parts).replace(/\D/g, "") }, deps.datajudOpts ?? {});
-      const d = docs[0];
+      let d: ReturnType<typeof mapDoc> | null = null;
+      let alias = candidatos[0]!;
+      let movimentos: LegalEventDto[] = [];
+      for (const cand of candidatos) {
+        const docs = await fetchProcessos(cand, { numeroProcesso: formatCnj(parts).replace(/\D/g, "") }, deps.datajudOpts ?? {});
+        if (docs[0]) {
+          alias = cand;
+          const m = mapDoc(docs[0], cand);
+          d = m;
+          movimentos = (docs[0].movimentos ?? []).map((mm) => ({
+            numeroProcesso: formatCnj(parts),
+            codigo: mm.codigo,
+            nome: mm.nome,
+            dataHora: mm.dataHora,
+            tribunal: cand,
+          }));
+          break;
+        }
+      }
       if (!d) return reply.code(404).send({ error: "processo não encontrado no DataJud", rule: "fonte pública CNJ" });
-      const caso = mapDoc(d, alias);
-      const movimentos: LegalEventDto[] = (d.movimentos ?? []).map((m) => ({
-        numeroProcesso: formatCnj(parts),
-        codigo: m.codigo,
-        nome: m.nome,
-        dataHora: m.dataHora,
-        tribunal: alias,
-      }));
+      const caso = d;
       const resumo = resumoProcesso({ caso, movimentos });
       // NADA é gravado: busca é só pré-visualização (o registro é o Acompanhar).
       return reply.send({ processo: caso, movimentos, resumo, rodape: RODAPE_INFORMATIVO, rule: "buscar = preview sem registro" });
@@ -181,7 +200,7 @@ export function processosRoutes(deps: ProcessosDeps) {
       const advertencias = [
         ...(det.advertencia ? [det.advertencia] : []),
         ...(ufPedida && !ufCoberta
-          ? [`tribunal ${ufPedida.toUpperCase()} ainda não está conectado — cobertura atual: ${COBERTURA_UFS.map((u) => u.toUpperCase()).join(" e ")}; a busca foi feita nas fontes verificadas`]
+          ? [`tribunal ${ufPedida.toUpperCase()} ainda não está conectado — cobertura atual: ${[...COBERTURA_UFS].sort().map((u) => u.toUpperCase()).join(", ").replace(/, ([^,]*)$/, " e $1")}; a busca foi feita nas fontes verificadas`]
           : []),
       ];
       return reply.send({
@@ -219,6 +238,24 @@ export function processosRoutes(deps: ProcessosDeps) {
         ...(deps.datajudOpts ? { datajudOpts: deps.datajudOpts } : {}),
       });
       return reply.send({ itens, rodape: RODAPE_INFORMATIVO });
+    });
+
+    // ── Modo IA de buscador no chat (plano-91-tribunais-ia §1.3): pesquisa web
+    //    REAL com fontes citadas. Sem AI_PROVIDER/AI_API_KEY → resultados DuckDuckGo
+    //    reais (geradaPorIA=false); com chave (tavily|perplexity|gemini) → resposta
+    //    gerada + fontes. Nunca resposta sem fonte.
+    app.post("/api/processos/buscar-web", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      const { pergunta } = z.object({ pergunta: z.string().min(3).max(300) }).parse(req.body ?? {});
+      const { responderComBuscador } = await import("../juridico/buscaIA.js");
+      const r = await responderComBuscador(pergunta, {
+        ...(deps.datajudOpts?.fetchImpl ? { fetchImpl: deps.datajudOpts.fetchImpl } : {}),
+      });
+      return reply.send({ ...r, rodape: RODAPE_INFORMATIVO });
     });
 
     // ── Perguntar ao assistente (grounded) — botão 💬 Explicar / chat ──

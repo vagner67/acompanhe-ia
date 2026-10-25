@@ -47,29 +47,76 @@ export function isValidCnj(numero: string): boolean {
  * `aliasFromTribunal` só quando a entrada existir; senão null (nunca inventar).
  */
 /**
- * Alias DataJud a partir do campo TR. Tabela CURTA — só pares com fonte real
- * (números de processo conhecidos; tabela da Res. 65/2008). A única verificada
- * AO VIVO em 23/10/2026 e `tjmt` (TR=11 -> HTTP 200 no DataJud). Qualquer outro
- * TR -> null (chamador informa o alias explicitamente). NAO completar por palpite.
+ * Alias DataJud por (J,TR). Tabela COMPLETA dos 91 índices públicos do CNJ —
+ * cada entrada VERIFICADA empiricamente em 24/10/2026 sondando
+ * `https://api-publica.datajud.cnj.jus.br/api_publica_{alias}/_search`
+ * (91/91 responderam; um processo real de cada índice confirmou o J.TR do doc).
+ * Extras medidos:
+ *  - TREs = `tre-{uf}` (não `api_publica_{uf}`); TRE-DF = `tre-df`.
+ *  - 5.01 = TST **e** TRT1 (convivem) → candidatos, não chave única.
+ *  - 6.16 = TSE · 7.06 = STM · J=9 = Justiça Militar Estadual (9.13/9.21/9.26).
+ *  - STJ guarda números de ORIGEM (doc do índice `stj` trazia nº 8.13) → a
+ *    busca por nº consulta também a corte superior do ramo.
+ *  - STF NÃO tem índice no DataJud (os 91 = 4 superiores + 6 TRFs + 27 TJs +
+ *    24 TRTs + 27 TREs + 3 militares, sem STF).
  */
 const ALIAS: Record<string, Record<string, string>> = {
-  "8": {
-    "11": "tjmt", // verificado vivo 23/10/2026 (fixture tjmt)
-    "02": "tjal", // verificado vivo 24/10/2026: api_publica_tjal 200 + hits (CNJ real 0764101-97.2025.8.02.0001)
-    "26": "tjsp", // padrao CNJ publico: 8.26 = SP; api_publica_tjsp 200 verificado vivo 24/10/2026
-    "19": "tjrj", // 8.19 = RJ
-    "13": "tjmg", // 8.13 = MG
-    "05": "tjba", // 8.05 = BA
-    "17": "tjpe", // 8.17 = PE
-    "21": "tjrs", // 8.21 = RS
-    "16": "tjpr", // 8.16 = PR
-    "24": "tjsc", // 8.24 = SC
-    "09": "tjgo", // 8.09 = GO
-    "06": "tjce", // 8.06 = CE
-    "07": "tjdft", // 8.07 = DF
+  "2": { "00": "stj" },
+  "4": { "01": "trf1", "02": "trf2", "03": "trf3", "04": "trf4", "05": "trf5", "06": "trf6" },
+  "5": {
+    "01": "trt1", "02": "trt2", "03": "trt3", "04": "trt4", "05": "trt5", "06": "trt6",
+    "07": "trt7", "08": "trt8", "09": "trt9", "10": "trt10", "11": "trt11", "12": "trt12",
+    "13": "trt13", "14": "trt14", "15": "trt15", "16": "trt16", "17": "trt17", "18": "trt18",
+    "19": "trt19", "20": "trt20", "21": "trt21", "22": "trt22", "23": "trt23", "24": "trt24",
   },
+  "6": {
+    "00": "tse", // TSE com numeração própria 6.00 (medido: docs do índice `tse`)
+    "01": "tre-ac", "02": "tre-al", "03": "tre-ap", "04": "tre-am", "05": "tre-ba",
+    "06": "tre-ce", "07": "tre-df", "08": "tre-es", "09": "tre-go", "10": "tre-ma",
+    "11": "tre-mt", "12": "tre-ms", "13": "tre-mg", "14": "tre-pa", "15": "tre-pb",
+    "16": "tre-pr", "17": "tre-pe", "18": "tre-pi", "19": "tre-rj", "20": "tre-rn",
+    "21": "tre-rs", "22": "tre-ro", "23": "tre-rr", "24": "tre-sc", "25": "tre-se",
+    "26": "tre-sp", "27": "tre-to",
+  },
+  "7": { "06": "stm" },
+  "8": {
+    "01": "tjac", "02": "tjal", "03": "tjap", "04": "tjam", "05": "tjba", "06": "tjce",
+    "07": "tjdft", "08": "tjes", "09": "tjgo", "10": "tjma", "11": "tjmt", "12": "tjms",
+    "13": "tjmg", "14": "tjpa", "15": "tjpb", "16": "tjpr", "17": "tjpe", "18": "tjpi",
+    "19": "tjrj", "20": "tjrn", "21": "tjrs", "22": "tjro", "23": "tjrr", "24": "tjsc",
+    "25": "tjse", "26": "tjsp", "27": "tjto",
+  },
+  "9": { "13": "tjmmg", "21": "tjmrs", "26": "tjmsp" },
 };
 
 export function aliasFromTribunal(justica: string, tribunal: string): string | null {
   return ALIAS[justica]?.[tribunal] ?? null;
 }
+
+/**
+ * Índices DataJud a consultar para um nº CNJ — a corte do (J,TR) **mais** a
+ * corte superior do ramo (superiores guardam números de ORIGEM; 5.01 = TRT1 e
+ * TST convivem). STF (J=1) não tem índice → lista vazia (chamador orienta).
+ * Verificado empiricamente 24/10/2026; nunca inventa alias fora da tabela.
+ */
+export function aliasCandidatesFromCnj(justica: string, tribunal: string): string[] {
+  const out: string[] = [];
+  const add = (a: string | null) => { if (a && !out.includes(a)) out.push(a); };
+  add(aliasFromTribunal(justica, tribunal));
+  if (justica === "5") add("tst");
+  else if (justica === "6") add("tse");
+  else if (justica === "7" || justica === "9") add("stm");
+  else if (justica === "4" || justica === "8") add("stj");
+  else if (justica === "2") add("stj");
+  return out.slice(0, 3);
+}
+
+/** Os 91 aliases do DataJud (chaves da tabela acima, exceto stf). Medido 24/10/2026. */
+export const TRIBUNAIS_DATAJUD: string[] = [
+  "tst", "tse", "stj", "stm",
+  ...["1", "2", "3", "4", "5", "6"].map((n) => `trf${n}`),
+  ...Object.keys(ALIAS["8"]!).map((tr) => ALIAS["8"]![tr]!),
+  ...Object.keys(ALIAS["5"]!).map((tr) => ALIAS["5"]![tr]!),
+  ...Object.keys(ALIAS["6"]!).map((tr) => ALIAS["6"]![tr]!).filter((a) => a !== "tse"), // 27 TREs
+  "tjmmg", "tjmrs", "tjmsp",
+];

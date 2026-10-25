@@ -123,6 +123,7 @@ export function api(token: string) {
       ),
     processoDetalhesLote: (cnjs: string[]) =>
       get<{ itens: DetalheTercero[]; rodape: string }>(`/api/processos/detalhes-lote?cnjs=${encodeURIComponent(cnjs.join(","))}`),
+    processoBuscarWeb: (pergunta: string) => post<RespostaBuscador>("/api/processos/buscar-web", { pergunta }),
     juridicoConsulta: (cnj: string, uf: string) => post<{ id: string; consolidado?: boolean }>("/api/juridico/consultas", { cnj, uf }),
     // —— Empréstimos ——
     feed: () => get<{ items: LoanRequestDto[] }>("/api/feed/emprestimos"),
@@ -239,6 +240,18 @@ export interface RespostaAssistente {
   rodape: string;
   intencao: string;
   acompanhado?: boolean;
+}
+export interface FonteWebDto {
+  titulo: string;
+  url: string;
+  trecho: string;
+}
+export interface RespostaBuscador {
+  provedor: "duckduckgo" | "tavily" | "perplexity" | "gemini";
+  geradaPorIA: boolean;
+  resposta: string;
+  fontes: FonteWebDto[];
+  rodape: string;
 }
 export interface ProcessoTercero {
   numeroProcesso: string;

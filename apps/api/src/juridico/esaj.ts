@@ -43,6 +43,8 @@ export interface ResultadoEsaj {
 export const ESAJ_BASES: Record<string, string> = {
   al: "https://www2.tjal.jus.br",
   sp: "https://esaj.tjsp.jus.br",
+  ac: "https://esaj.tjac.jus.br", // verificado 24/10: cpopg 200 NMPARTE+DOCPARTE, sem captcha (fixtures tjac-*)
+  ce: "https://esaj.tjce.jus.br", // verificado 24/10 via curl (TLS Python do sandbox falha; Node/curl alcançam)
 };
 
 export const COBERTURA_UFS = Object.keys(ESAJ_BASES);

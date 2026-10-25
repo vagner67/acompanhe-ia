@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { XP } from "@acompanhe/shared";
-import { api, adminApi, type DetalheTercero, type Gamificacao, type GastoDto, type LegalEventDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type ProcessoTercero, type ResultadoEsaj, type StatusAssinatura } from "./api2";
+import { api, adminApi, type DetalheTercero, type FonteWebDto, type Gamificacao, type GastoDto, type LegalEventDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type ProcessoTercero, type ResultadoEsaj, type StatusAssinatura } from "./api2";
 
 type Api = ReturnType<typeof api>;
 interface P {
@@ -365,7 +365,7 @@ export function ConcursosScreen({ a, toast }: P) {
 }
 
 // ═══════════════════════ JURÍDICO ═══════════════════════
-type ChatMsg = { quem: "user" | "ia"; texto: string; fontes?: string[]; rodape?: string };
+type ChatMsg = { quem: "user" | "ia"; texto: string; fontes?: string[]; rodape?: string; fontesWeb?: FonteWebDto[]; provedor?: string };
 
 const fmtDataBR = (iso: string) => {
   const d = new Date(iso);
@@ -498,7 +498,7 @@ export function JuridicoScreen({ a, toast }: P) {
       toast("🔬 a pesquisa profunda é por NOME, CPF ou CNPJ — para um processo use 🔎 Buscar");
       return;
     }
-    avancar(1, 3, "consultando páginas das fontes verificadas (AL, SP)…");
+    avancar(1, 3, "consultando páginas das fontes verificadas (AC, AL, CE, SP)…");
     try {
       const r1 = await a.processoPesquisar(texto, "todas", 1);
       let itens = [...r1.itens];
@@ -534,6 +534,37 @@ export function JuridicoScreen({ a, toast }: P) {
     } catch (e) {
       toast(`⚠ ${(e as Error).message}`);
     } finally {
+      setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
+    }
+  };
+
+  // —— modo IA de buscador no chat (plano-91-tribunais-ia §1.3) — pesquisa web REAL ——
+  const buscarWebChat = async () => {
+    const texto = pergunta.trim();
+    if (!texto) {
+      toast("digite a pergunta no campo do chat (ex.: qual o prazo de apelação no CPC?) e toque em 🔎 Buscar na web");
+      return;
+    }
+    setChat((c) => [...c, { quem: "user", texto: `🌐 (busca web) ${texto}` }]);
+    setPergunta("");
+    setDigitando(true);
+    avancar(1, 2, "pesquisando na web (resultados reais, sem chave)…");
+    try {
+      const r = await a.processoBuscarWeb(texto);
+      avancar(2, 2, "fontes recebidas");
+      setChat((c) => [
+        ...c,
+        {
+          quem: "ia",
+          texto: `${r.geradaPorIA ? "🤖 resposta gerada com citações" : "🌐 resultados reais da web"} · provedor: ${r.provedor}\n\n${r.resposta}`,
+          fontesWeb: r.fontes,
+          rodape: r.rodape,
+        },
+      ]);
+    } catch (e) {
+      setChat((c) => [...c, { quem: "ia", texto: `A busca web não respondeu agora: ${(e as Error).message}` }]);
+    } finally {
+      setDigitando(false);
       setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
     }
   };
@@ -605,8 +636,10 @@ export function JuridicoScreen({ a, toast }: P) {
       <div className="card">
         <h3>⚖️ Jurídico — busca por nome, CPF ou número do processo</h3>
         <p className="mut">
-          Um campo único identifica o que você digitou. CNJ abre o processo (DataJud); nome, CPF ou CNPJ lista
-          processos públicos em que a pessoa/empresa figura como parte (processos de terceiros).
+          Um campo único identifica o que você digitou. Número CNJ → dados oficiais do DataJud/CNJ nos
+          <strong> 91 tribunais do Brasil</strong> (STF não publica no DataJud). Nome, CPF ou CNPJ → processos públicos
+          em que a pessoa/empresa figura como parte, nas fontes de consulta pública verificadas (AC, AL, CE, SP);
+          demais tribunais: use o nº do processo ou o portal oficial indicado.
         </p>
         <label>Nome, CPF ou número do processo</label>
         <input
@@ -850,6 +883,23 @@ export function JuridicoScreen({ a, toast }: P) {
                   fontes: {m.fontes.join(" · ")}
                 </div>
               )}
+              {m.fontesWeb && m.fontesWeb.length > 0 && (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {m.fontesWeb.map((f, k) => (
+                    <a
+                      key={`${f.url}-${k}`}
+                      href={f.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      style={{ fontSize: "0.78rem", lineHeight: 1.4, textDecoration: "none", border: "1px solid var(--line-hair)", borderRadius: 10, padding: "6px 10px", display: "block" }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{k + 1}. {f.titulo}</div>
+                      {f.trecho && <div className="mut" style={{ fontSize: "0.72rem", marginTop: 2 }}>{f.trecho.slice(0, 200)}{f.trecho.length > 200 ? "…" : ""}</div>}
+                      <div className="mut mono" style={{ fontSize: "0.68rem", marginTop: 2 }}>{f.url}</div>
+                    </a>
+                  ))}
+                </div>
+              )}
               {m.rodape && (
                 <div className="mut" style={{ fontSize: "0.7rem", marginTop: 4, fontStyle: "italic" }}>{m.rodape}</div>
               )}
@@ -877,6 +927,9 @@ export function JuridicoScreen({ a, toast }: P) {
           />
           <button className="btn good" onClick={() => void enviarPergunta(pergunta)}>
             Perguntar
+          </button>
+          <button className="btn ghost" title="Pesquisar na web (resultados reais com fontes; com AI_API_KEY configurada, resposta gerada com citações)" onClick={() => void buscarWebChat()}>
+            🔎 Buscar na web
           </button>
         </div>
         <button

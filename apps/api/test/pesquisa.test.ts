@@ -96,11 +96,34 @@ describe("GET /api/processos/pesquisar — paywall + detecção honesta", () => 
     expect(r.statusCode).toBe(200);
     const b = r.json();
     expect(b.tipo).toBe("nome");
-    expect(b.fontes.length).toBe(2); // al + sp verificadas
+    expect(b.fontes.length).toBe(4); // al, sp, ac, ce verificadas
     expect(b.itens.length).toBeGreaterThan(10);
     expect(b.itens.some((i: { nomeParte: string | null }) => (i.nomeParte ?? "").includes("João Carlos"))).toBe(true);
     expect(b.rodape).toContain("Homônimos");
     expect(b.rodape).toContain("segredo de justiça");
+  });
+
+  it("POST /buscar-web: 403 sem plano · 200 com provedor honesto e fontes reais", async () => {
+    const ddg = readFileSync(join(dir, "ddg", "busca-cpc.html"), "utf8");
+    const f = (async (url: RequestInfo | URL) => {
+      if (String(url).includes("duckduckgo")) return new Response(ddg, { status: 200 });
+      return new Response("{}", { status: 500 });
+    }) as typeof fetch;
+    const { app, ents } = makeApp({ fetchImpl: f });
+    const t = await login(app);
+    const H = { authorization: `Bearer ${t}` };
+    const body = { pergunta: "prazo de apelação no CPC" };
+    expect((await app.inject({ method: "POST", url: "/api/processos/buscar-web", payload: body, headers: H })).statusCode).toBe(403);
+    await ents.grant("77", "juridica");
+    const r = await app.inject({ method: "POST", url: "/api/processos/buscar-web", payload: body, headers: H });
+    expect(r.statusCode).toBe(200);
+    const b = r.json();
+    expect(b.provedor).toBe("duckduckgo");
+    expect(b.geradaPorIA).toBe(false);
+    expect(b.fontes.length).toBeGreaterThanOrEqual(8);
+    expect(b.fontes[0].url.startsWith("http")).toBe(true);
+    expect(b.rodape).toContain("informativo");
+    await app.close();
   });
 
   it("nome comum demais → estado 'multiplos' honesto, sem inventar itens", async () => {
@@ -124,8 +147,8 @@ describe("GET /api/processos/pesquisar — paywall + detecção honesta", () => 
     expect(r.statusCode).toBe(200);
     const b = r.json();
     expect(b.advertencia).toContain("MT ainda não está conectado");
-    expect(b.advertencia).toContain("AL e SP");
-    expect(b.fontes.length).toBe(2); // rodou em todas as verificadas
+    expect(b.advertencia).toContain("CE e SP");
+    expect(b.fontes.length).toBe(4); // rodou em todas as verificadas (ac, al, ce, sp)
     expect(b.itens.length).toBeGreaterThan(10); // itens reais das fixtures
   });
 
@@ -170,19 +193,34 @@ describe("GET /api/processos/detalhes-lote — cruzamento REAL DataJud", () => {
     await app.close();
   });
 
-  it("CNJ de tribunal sem alias → item honesto sem dados (não derruba o lote)", async () => {
+  it("STF (J=1, sem índice no DataJud) → item honesto sem dados (não derruba o lote)", async () => {
     const datajud = async () => [REAL];
     const { app, ents } = makeApp({ datajud });
     const t = await login(app);
     const H = { authorization: `Bearer ${t}` };
     await ents.grant("77", "juridica");
-    // justica=9/tribunal=99 não mapeia alias (DV 37 calculado pelo algoritmo oficial)
-    const r = await app.inject({ method: "GET", url: "/api/processos/detalhes-lote?cnjs=0006903-37.2014.9.99.0037", headers: H });
+    // CNJ STF válido (DV 30 conferido pelo algoritmo oficial): 0001234-30.2020.1.00.0000
+    const r = await app.inject({ method: "GET", url: "/api/processos/detalhes-lote?cnjs=0001234-30.2020.1.00.0000", headers: H });
     expect(r.statusCode).toBe(200);
     const it0 = r.json().itens[0];
     expect(it0.status).toBeNull();
     expect(it0.classe).toBeNull();
-    expect(it0.fonte).toBe("datajud");
+    expect(it0.fonte).toBe("datajud"); // sem alias inventado
+    await app.close();
+  });
+
+  it("nº do TJ mas processo só no superior (STJ guarda nº de origem) → fonte datajud-stj", async () => {
+    // 8.13 → candidatos [tjmg, stj]: tjmg vazio, stj devolve o doc real
+    const datajud = async (alias: string) => (alias === "stj" ? [REAL] : []);
+    const { app, ents } = makeApp({ datajud });
+    const t = await login(app);
+    const H = { authorization: `Bearer ${t}` };
+    await ents.grant("77", "juridica");
+    const r = await app.inject({ method: "GET", url: "/api/processos/detalhes-lote?cnjs=0006903-15.2014.8.13.0037", headers: H });
+    expect(r.statusCode).toBe(200);
+    const it0 = r.json().itens[0];
+    expect(it0.fonte).toBe("datajud-stj");
+    expect(it0.status).not.toBeNull();
     await app.close();
   });
 });

@@ -4,7 +4,7 @@
  * cruzamento DataJud por CNJ. Estados honestos por fonte; nunca fabrica.
  */
 import { consultarEsaj, COBERTURA_UFS, type ResultadoEsaj, type ProcessoTercero } from "./esaj.js";
-import { parseCnj, aliasFromTribunal } from "./cnj.js";
+import { parseCnj, aliasCandidatesFromCnj } from "./cnj.js";
 import { mapDoc } from "./service.js";
 import type { DatajudDoc } from "./types.js";
 import type { DatajudClientOpts } from "./datajud.js";
@@ -70,7 +70,10 @@ export async function detalharProcessos(
   const saida: DetalheTercero[] = [];
   for (const numero of unicos) {
     const partes = parseCnj(numero);
-    const alias = partes ? aliasFromTribunal(partes.justica, partes.tribunal) : null;
+    // 91 tribunais: candidatos = corte do (J,TR) + superior do ramo (superiores
+    // guardam números de ORIGEM; 5.01 = TRT1 e TST convivem) — mapa verificado
+    // empiricamente 24/10/2026 (plano-91-tribunais-ia §1.1).
+    const candidatos = partes ? aliasCandidatesFromCnj(partes.justica, partes.tribunal) : [];
     const base: DetalheTercero = {
       numeroProcesso: numero,
       status: null,
@@ -79,20 +82,29 @@ export async function detalharProcessos(
       valorDaCausa: null,
       ultimoMovimento: null,
       dataAjuizamento: null,
-      fonte: alias ? `datajud-${alias}` : "datajud",
+      fonte: candidatos[0] ? `datajud-${candidatos[0]}` : "datajud",
     };
-    if (!partes || !alias) {
+    if (!partes || candidatos.length === 0) {
       saida.push(base);
       continue;
     }
     try {
-      const docs = await deps.datajud(alias, { numeroProcesso: `${partes.sequencial}${partes.dd}${partes.ano}${partes.justica}${partes.tribunal}${partes.origem}` }, deps.datajudOpts ?? {});
-      const doc = docs[0];
+      let doc: DatajudDoc | undefined;
+      let aliasUsado = candidatos[0]!;
+      for (const alias of candidatos) {
+        const docs = await deps.datajud(alias, { numeroProcesso: `${partes.sequencial}${partes.dd}${partes.ano}${partes.justica}${partes.tribunal}${partes.origem}` }, deps.datajudOpts ?? {});
+        if (docs[0]) {
+          doc = docs[0];
+          aliasUsado = alias;
+          base.fonte = `datajud-${alias}`;
+          break;
+        }
+      }
       if (!doc) {
         saida.push(base);
         continue;
       }
-      const c = mapDoc(doc, alias);
+      const c = mapDoc(doc, aliasUsado);
       saida.push({
         numeroProcesso: numero,
         status: c.status,

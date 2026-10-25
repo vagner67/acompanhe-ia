@@ -1,0 +1,4244 @@
+
+
+
+
+
+
+
+
+
+
+
+<html>
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">	
+
+	
+
+
+
+
+
+
+
+
+    <script language="javascript" type="text/JavaScript"
+            src="https://esaj.tjce.jus.br/sajcas/verificarLogin.js?script=1792889645788"></script>
+
+    <script language="javascript">
+        if (window.sajcas && window.sajcas.usuarioLogadoNoCasServer) {
+            var GATEWAY_TRUE = 'gateway=true', GATEWAY_FALSE = 'gateway=false';
+            var urlRetornoSistema = '';
+            if (urlRetornoSistema === '') {
+                urlRetornoSistema = window.location.href;
+            }
+
+            if (urlRetornoSistema.indexOf(GATEWAY_FALSE) !== -1) {
+                urlRetornoSistema = urlRetornoSistema.replace(GATEWAY_FALSE, GATEWAY_TRUE);
+            } else {
+                urlRetornoSistema.lastIndexOf('?') !== -1 ? urlRetornoSistema += '&' : urlRetornoSistema += '?';
+                urlRetornoSistema += GATEWAY_TRUE;
+            }
+
+            window.location.href = urlRetornoSistema;
+        }
+    </script>
+
+
+	<title>Portal de Serviços e-SAJ</title>
+
+	
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+	<link rel="stylesheet" href="/cpopg/softheme/src/css/app.css?v=2.8.34-30">
+	<link rel="stylesheet" href="/cpopg/softheme/src/fonts/saj/styles.css?v=2.8.34-30">
+	<link rel="stylesheet" href="/cpopg/css/formulario.css?v=2.8.34-30" type="text/css"/>
+	
+
+	<link rel="stylesheet" href="/cpopg/webjars/select2/3.5.4/select2.css?v=2.8.34-30" type="text/css" >
+	<link rel="stylesheet" href="/cpopg/webjars/select2/3.5.4/select2-bootstrap.css?v=2.8.34-30" type="text/css">
+	<link rel="stylesheet" href="/cpopg/css/saj/select2/saj-select2.css">
+
+	
+ 
+<script>
+	window.saj = window.saj || {};
+	window.saj.env = window.saj.env || {};
+	window.saj.env.root = '/cpopg';
+	window.saj.env.css = '/cpopg/css';
+	window.saj.env.js = '/cpopg/js';
+	window.saj.env.imagens = '/cpopg/imagens';
+	window.saj.env.queryString = 'conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1';	
+
+	window.saj.cpo = window.saj.cpo || {};
+
+	// transfere variavel se cpo esta rodando para totem
+	window.saj.cpo.totem = 'false' == 'true';
+</script>
+
+	
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/jquery/jquery.min.js?n=1620728708"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/jquery/jquery.func_toggle.js?n=44eb9f3f-ec8a-4326-af15-64ceded901d6"></script>
+	<script language="javascript" type="text/javascript" src="/cpopg/js/jquery/jquery.blockUI.min.js?n=762edd41-92f7-4f68-9169-d18aa1f2f6d6"></script>
+	<script language="javascript" type="text/javascript" src="/cpopg/js/jquery/jquery.browser.min.js?n=9b1eb54f-532f-493a-a37d-2f6b68fdc7ed"></script>
+
+	<script language="javascript" type="text/javascript" src="/cpopg/webjars/lodash/4.17.21/lodash.js?n=9dc2640e-792b-4c3f-bb92-35f2b8afee32"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/select2/select2.js?n=35677944-733f-42d4-94c6-c13779970a4c"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/webjars/select2/3.5.4/select2_locale_pt-BR.js?n=2fd73409-8de4-4be2-b308-cdaeba9393ec"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/saj-select2.js?n=e7f388d0-a918-42f5-bf64-ba811fa18efb"></script>
+
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/saj-web-2.2.41-4.js?n=d4b4a34e-e4e6-41a4-b206-a5fcf763e81f"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/saj-tooltip.js?n=0582f670-6fe8-4d62-abe6-c7ad3a308469"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/saj-popup-modal-1.0.0-1.js?n=10d34d7b-a378-4ba3-84c5-67a233a6c83d"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/saj-browser.js?n=fb159966-e3b1-40b1-98d5-e071b3f776cf"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/saj-mascara-input.js?n=07eacf03-186b-4163-8313-db996875c359"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/saj-numeroProcesso.js?n=f5edd3ec-9691-4b4b-9424-ed814257dc5c"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj-cpo-cbpesquisa.js?n=295666404"></script>
+	<script language="javascript" type="text/JavaScript" src="/cpopg/js/saj/acessibilidade/acessibilidade.js?n=4602f49a-3465-4709-a883-c5ee55ecbbdc"></script>
+	
+	<script language="javascript" type="text/JavaScript" src="/cpopg/softheme/src/js/app.js?n=789536343"></script>   
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js?n=5877d818-019e-43d3-9b64-89eaf82d3662" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js?n=1791337263" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+	
+	
+
+
+
+
+<script>
+	(function($){
+		$(function(){
+			var intervalo = 1795000;
+			$.saj.manterSessao('/cpopg/manterSessao.do', intervalo);
+		});
+				
+	})(jQuery);
+</script>
+
+
+
+
+	
+		<meta name="robots" content="noindex, nofollow, noarchive" />
+		<link rel="canonical" href="/cpopg/open.do" />
+		<script language="javascript" type="text/JavaScript" src="/cpopg/js/formulario.js?n=667373380"></script>
+		<script language="javascript" type="text/JavaScript" src="/cpopg/jsp/list.js?n=3440463874"></script>
+        <link rel="stylesheet" href="/cpopg/css/modal.css" type="text/css"/>
+	
+	<script type="text/javascript">
+		(function($) {
+			$(function(){
+				// Correção temporária do alinhamento do divisor de seção de formulário do SPW 
+				$('td[background$="spw/fundo_subtitulo2.gif"]').attr('valign', 'top');
+				
+			})
+		})(jQuery);
+	</script>
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+</head>
+
+
+<body>
+
+
+
+
+    
+    
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+		
+
+
+
+
+    
+
+
+
+<aside class="aside-nav aside-nav--left ">
+    <div class="aside-nav__inner">
+        <header class="aside-nav__main-menu__header"><span
+                class="aside-nav__main-menu__header__text">  Menu e-SAJ</span>
+            <a href="#" class="aside-nav__user__close-button close-offcanvas">
+                <img src="https://esaj.tjce.jus.br/esaj-layout/img/icons/icon-close--light.png" alt="">
+            </a>
+        </header>
+        <nav class="aside-nav__main-menu">
+            <ul class="aside-nav__main-menu__list" id="conteudoMenuEsaj">
+            </ul>
+        </nav>
+        <div id="esaj-beta-switcher-placeholder"></div>
+    </div>
+</aside>
+<aside class="aside-nav aside-nav--right aside-nav__user ">
+    <div class="aside-nav__inner">
+        <div class="aside-nav__user__sign">
+            <div class="aside-nav__user__sign__brand">
+                <img src="https://esaj.tjce.jus.br/esaj-layout/img/aside/brasoes/br-tjce.jpg" alt="">
+            </div>
+            <ul class="aside-nav__user__sign__list">
+                <li><span class="aside-nav__user__sign__place">Tribunal de Justiça do Estado do Ceará</span></li>
+            </ul>
+            <a href="#" class="aside-nav__user__close-button close-offcanvas">
+                <img src="https://esaj.tjce.jus.br/esaj-layout/img/icons/icon-close--dark.png" alt="">
+            </a>
+        </div>
+        <hr>
+        <div class="aside-nav__user__info">
+            <h4 class="aside-nav__user__title">Minha conta</h4>
+            <ul class="aside-nav__user__info__list">
+                <li class="aside-nav__user__info__list__item"><span class="aside-nav__user__info__name" id="menuNmUsuarioLogado"></span></li>
+                <li class="aside-nav__user__info__list__item"><span class="aside-nav__user__info__oab" id="menuUsuarioOabs">OAB: </span></li>
+            </ul>
+            <ul class="aside-nav__user__info__list-access">
+                <li class="aside-nav__user__info__list-access__item"><a class="aside-nav__user__info__list-access__item__link" href="https://esaj.tjce.jus.br/esaj/cadastro.do">Meu perfil</a></li>
+                
+                    <li class="aside-nav__user__info__list-access__item"><a class="aside-nav__user__info__list-access__item__link" href="https://esaj.tjce.jus.br/caixapostal">Caixa Postal</a></li>
+                
+                <li class="aside-nav__user__info__list-access__item"><a class="aside-nav__user__info__list-access__item__link" id="logoutLink" href="#">Sair</a></li>
+            </ul>
+        </div>
+    </div>
+</aside>
+<header>
+    <link rel="shortcut icon" href="https://esaj.tjce.jus.br/esaj-layout/tema/padrao/clientes/CE/imagens/favicon.ico" type="image/x-icon"/>
+    <link href="https://esaj.tjce.jus.br/esaj-layout/app.css" rel="stylesheet" type="text/css"/>
+    <nav class="header__navbar--normal">
+        
+        <a class="header__navbar__menu-hamburger open__aside-nav--left navbar-menu-hamburger__item__link">
+            <span class="menu-hamburger__alert" style="display:none;"></span>
+            <span class="glyph glyph-hamburger"></span>
+        </a>
+
+        <h1 class="header__navbar__title" href=""><a class="linkLogo" href="https://esaj.tjce.jus.br/esaj-layout/redirecionarNovoEsaj.do"><strong>e-SAJ</strong></a> | Processos de 1º Grau</h1>
+
+        <ul class="header__navbar__menu header__navbar__menu--right">
+            <li class="header__navbar__menu__item header__navbar__menu__item--initials">
+                <a class="header__navbar__brand__initials" href="https://www.tjce.jus.br"> TJCE </a>
+            </li>
+            <li class="header__navbar__menu__item header__navbar__menu__item--user">
+               <span class="header__navbar__name open__aside-nav--right">
+                     <span id="headerNmUsuarioLogado" class="header__navbar__name__text"></span>
+                     <span class="glyph glyph-contact header__navbar__name__icon"></span>
+               </span>
+            </li>
+        </ul>
+    </nav>
+</header>
+<div class="offcanvas-backdrop"></div>
+
+
+<script>
+    var dict = {
+        'certificado.tituloCertificadoDigital': 'Certificado digital',
+        'certificado.msgCarregandoCertificado': 'Carregando certificados...',
+        'certificado.msgNenhumCertificadoEncontrado': 'Nenhum certificado encontrado',
+        'certificado.msgErroCarregarCertificado': 'Erro ao carregar certificados',
+        'certificado.msgCertificadoExpirado': '[Expirado]',
+        'certificado.msgCertificadoNaoValido': '[Ainda não válido]',
+        'certificado.msgCertificadoNaoIcpBrasil': '[Não ICP-Brasil]',
+        'certificado.tituloProblemasAoAssinar': 'Falha de comunicação com o dispositivo de assinatura digital',
+
+        'label.contato': 'Contato',
+        'label.identificarSe': 'Identificar-se ',
+
+        'mensagem.aguarde': 'Por favor, aguarde.',
+        'mensagem.paginaNaoCarregada': 'Não foi possível carregar a página.',
+        'mensagem.marcarLido': 'Marcar como lido',
+        'mensagem.registrosSelecionados': 'Registros selecionados',
+        'mensagem.registroJaSelecionado': 'Este registro já está selecionado',
+
+        'mensagem.data.invalida': 'A data digitada é inválida.',
+        'mensagem.data.anoInvalido': 'O ano informado deve ser maior que',
+        'mensagem.data.mesInvalido': 'O mês não pode ser maior que 12.',
+        'mensagem.data.mes': 'O mês',
+        'mensagem.data.mesMaior29dias': 'não pode ter mais que 29 dias.',
+        'mensagem.data.mesMaior28dias': 'não pode ter mais que 28 dias.',
+        'mensagem.data.mesMaior31dias': 'não pode ter mais que 31 dias.',
+        'mensagem.data.mesMaior30dias': 'não pode ter mais que 30 dias.',
+
+        'mensagem.email.invalido': 'O formato do endereço de e-mail não é válido. Verifique se ele tem o formato "usuario@dominio".',
+        'mensagem.email.caracteresInvalidos': 'O endereço de e-mail possui caracteres inválidos',
+        'mensagem.email.usuarioInvalido': 'O formato do usuário informado no endereço de e-mail não é válido.',
+        'mensagem.email.ipInvalido': 'O endereço IP informado no endereço de e-mail não é válido.',
+        'mensagem.email.dominioInvalido': 'O formato do domínio informado no endereço de e-mail não é válido.',
+        'mensagem.email.dominioIncompleto': 'O domínio informado no endereço de e-mail deve possuir pelo menos duas partes. Por exemplo: "usuario@empresa.com.br".',
+
+        'mensagem.texto.tamanhoInvalido': 'O tamanho do texto digitado é maior do que o tamanho permitido. Tamanho permitido:',
+        'mensagem.texto.caracter': 'O caracter',
+        'mensagem.texto.caracterPosicaoInvalida': 'não está permitido na posição',
+
+        'mensagem.numero.numeroInvalido': 'O valor digitado não é um número válido.',
+        'mensagem.numero.numeroNaoPodeCasasDecimais': 'O número não pode conter casas decimais',
+        'mensagem.numero.numeroCasaDecimaisInvalidas': 'O número de casas decimais é inválido. O número pode conter apenas',
+        'mensagem.numero.casaDecimais': 'casas decimais',
+        'mensagem.numero.numeroInteiroInvalido': 'O número de dígitos inteiros é inválido. O número pode conter apenas',
+        'mensagem.numero.digitosInteiros': 'dígitos inteiros',
+        'mensagem.numero.numeroTamanhoInvalido': 'O número digitado não pode ser maior que',
+        'mensagem.numero.numeroZeroInvalido': 'O número digitado deve ser diferente de zero.'
+    }
+</script>
+
+
+
+<script>
+    var appEsajLayout = appEsajLayout || {};
+    appEsajLayout.urlNovoMenuHtml = 'https://esaj.tjce.jus.br/esaj-layout/menuPortalV2Html.do?servico=190101';
+
+    var appEsajCas = appEsajCas || {};
+    appEsajCas.urlServicoConteudoIdentificacao = 'https://esaj.tjce.jus.br/sajcas/conteudoIdentificacaoJson?script=1792828853823&retorno=' + encodeURIComponent(location.href);
+</script>
+<script src="https://esaj.tjce.jus.br/esaj-layout/js/portalV2-bundle.js?n=806192629"></script>
+<script src="https://esaj.tjce.jus.br/esaj-layout/js/saj-certificado.js?n=47741893"></script>
+<script src="https://esaj.tjce.jus.br/esaj-layout/js/softplan-websigner-2.5.1.js?n=736057767"></script>
+
+<script src="https://esaj.tjce.jus.br/sajcas/seletorVersaoBeta.js?n=25a70215-13f6-40eb-82b2-85620e647f9e&versao=2"></script>
+<script>
+    function exibirLibras() {
+        document.getElementById("gifLibras").style.display = 'block';
+        var cel1 = document.getElementsByClassName('esajCelulaIdentificacao');
+        var cel2 = document.getElementsByClassName('esajCelulaIdentificacaoServico');
+        mudarPosicao(cel1, 'static');
+        mudarPosicao(cel2, 'static');
+    }
+    function ocultarLibras() {
+        document.getElementById("gifLibras").style.display = 'none';
+        var cel1 = document.getElementsByClassName('esajCelulaIdentificacao');
+        var cel2 = document.getElementsByClassName('esajCelulaIdentificacaoServico');
+        mudarPosicao(cel1, 'relative');
+        mudarPosicao(cel2, 'relative');
+    }
+
+    function mudarPosicao(coll, posicao) {
+        if (!coll) {
+            return;
+        }
+        for (var i = 0, len = coll.length; i < len; i++) {
+            coll[i].style["position"] = posicao;
+        }
+    }
+</script>
+
+	
+
+
+
+
+
+<div class="container" style="padding-top: 0px">
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5"/>
+	
+	
+	
+		
+			<form name="consultarProcessoForm" method="GET" action="/cpopg/search.do" id="openForm">
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="application/javascript" language="JavaScript">
+    (function ($) {
+        $.saj = $.saj || {};
+        $.saj.cpopg = $.saj.cpopg || {};
+        $.saj.cpopg.locaisDePesquisa = JSON.parse('[{"id":-1,"text":"Todos os foros"},{"id":183,"text":"Abaiara"},{"id":27,"text":"Acarape"},{"id":28,"text":"Acaraú"},{"id":29,"text":"Acopiara"},{"id":30,"text":"Aiuaba"},{"id":184,"text":"Alcantara"},{"id":185,"text":"Altaneira"},{"id":31,"text":"Alto Santo"},{"id":296,"text":"Ambiente de Inquéritos - Fortaleza"},{"id":32,"text":"Amontada"},{"id":33,"text":"Antonina do Norte"},{"id":186,"text":"Apuiares"},{"id":34,"text":"Aquiraz"},{"id":35,"text":"Aracati"},{"id":36,"text":"Aracoiaba"},{"id":37,"text":"Ararendá"},{"id":38,"text":"Araripe"},{"id":39,"text":"Aratuba"},{"id":187,"text":"Arneiroz"},{"id":40,"text":"Assaré"},{"id":41,"text":"Aurora"},{"id":42,"text":"Baixio"},{"id":188,"text":"Banabuiu"},{"id":43,"text":"Barbalha"},{"id":44,"text":"Barreira"},{"id":45,"text":"Barro"},{"id":46,"text":"Barroquinha"},{"id":47,"text":"Baturité"},{"id":49,"text":"Beberibe"},{"id":50,"text":"Bela Cruz"},{"id":51,"text":"Boa Viagem"},{"id":52,"text":"Brejo Santo"},{"id":53,"text":"Camocim"},{"id":54,"text":"Campos Sales"},{"id":55,"text":"Canindé"},{"id":56,"text":"Capistrano"},{"id":57,"text":"Caridade"},{"id":58,"text":"Cariré"},{"id":59,"text":"Caririaçu"},{"id":60,"text":"Cariús"},{"id":61,"text":"Carnaubal"},{"id":62,"text":"Cascavel"},{"id":63,"text":"Catarina"},{"id":189,"text":"Catunda"},{"id":64,"text":"Caucaia"},{"id":66,"text":"Cedro"},{"id":317,"text":"CEJUSC - Regional Cariri"},{"id":307,"text":"CEJUSC - SG"},{"id":67,"text":"Chaval"},{"id":226,"text":"Choró"},{"id":190,"text":"Choro Limão"},{"id":68,"text":"Chorozinho"},{"id":69,"text":"Coreaú"},{"id":70,"text":"Crateús"},{"id":71,"text":"Crato"},{"id":73,"text":"Croatá"},{"id":74,"text":"Cruz"},{"id":191,"text":"Deputado Irapuan Pinheiro"},{"id":192,"text":"Erere"},{"id":75,"text":"Eusebio"},{"id":76,"text":"Farias Brito"},{"id":288,"text":"Foro Eletrônico de Teste | NÃO PETICIONA"},{"id":218,"text":"Foro JECC. - 12ª unid. comarca fortaleza"},{"id":48,"text":"Foro JECC. da comarca de Baturité"},{"id":65,"text":"Foro JECC. da Comarca de Caucaia"},{"id":72,"text":"Foro JECC. da comarca de Crato"},{"id":102,"text":"Foro JECC. da comarca de Itapipoca"},{"id":118,"text":"Foro JECC. da comarca de Maracanaú"},{"id":152,"text":"Foro JECC. da comarca de Quixadá"},{"id":172,"text":"Foro JECC. da comarca de Tauá"},{"id":174,"text":"Foro JECC. da Comarca de Tianguá"},{"id":77,"text":"Forquilha"},{"id":1,"text":"Fortaleza - Fórum Clóvis Beviláqua"},{"id":25,"text":"Fortaleza - Juizado da Violência Domésti"},{"id":78,"text":"Fortim"},{"id":229,"text":"Fórum das Turmas Recursais"},{"id":79,"text":"Frecheirinha"},{"id":193,"text":"General Sampaio"},{"id":80,"text":"Graça"},{"id":81,"text":"Granja"},{"id":194,"text":"Granjeiro"},{"id":82,"text":"Groaíras"},{"id":83,"text":"Guaiuba"},{"id":84,"text":"Guaraciaba do Norte"},{"id":195,"text":"Guaramiranga"},{"id":85,"text":"Hidrolândia"},{"id":86,"text":"Horizonte"},{"id":196,"text":"Ibaretama"},{"id":87,"text":"Ibiapina"},{"id":88,"text":"Ibicuitinga"},{"id":89,"text":"Icapuí"},{"id":90,"text":"Icó"},{"id":91,"text":"Iguatu"},{"id":92,"text":"Independência"},{"id":93,"text":"Ipaporanga"},{"id":94,"text":"Ipaumirim"},{"id":95,"text":"Ipu"},{"id":96,"text":"Ipueiras"},{"id":97,"text":"Iracema"},{"id":98,"text":"Iraucuba"},{"id":197,"text":"Itaiçaba"},{"id":99,"text":"Itaitinga"},{"id":100,"text":"Itapajé"},{"id":101,"text":"Itapipoca"},{"id":103,"text":"Itapiúna"},{"id":104,"text":"Itarema"},{"id":105,"text":"Itatira"},{"id":106,"text":"Jaguaretama"},{"id":198,"text":"Jaguaribara"},{"id":107,"text":"Jaguaribe"},{"id":108,"text":"Jaguaruana"},{"id":109,"text":"Jardim"},{"id":110,"text":"Jati"},{"id":220,"text":"JECC - 22ª UNIDADE COMARCA DE FORTALEZA"},{"id":222,"text":"JECC - 23ª UNIDADE COMARCA DE FORTALEZA"},{"id":219,"text":"JECC - 6ªUNIDADE - ANEXO UNIFOR"},{"id":111,"text":"Jijoca de Jericoacoara"},{"id":112,"text":"Juazeiro do Norte"},{"id":113,"text":"Jucás"},{"id":239,"text":"Juizado do Torcedor"},{"id":232,"text":"Juizado especial de crato - anexo juizad"},{"id":114,"text":"Lavras da Mangabeira"},{"id":115,"text":"Limoeiro do Norte"},{"id":116,"text":"Madalena"},{"id":117,"text":"Maracanaú"},{"id":119,"text":"Maranguape"},{"id":120,"text":"Marco"},{"id":199,"text":"Martinopole"},{"id":121,"text":"Massapê"},{"id":122,"text":"Mauriti"},{"id":123,"text":"Meruoca"},{"id":124,"text":"Milagres"},{"id":200,"text":"Milhã"},{"id":201,"text":"Miraima"},{"id":125,"text":"Missão Velha"},{"id":126,"text":"Mombaça"},{"id":127,"text":"Monsenhor Tabosa"},{"id":128,"text":"Morada Nova"},{"id":202,"text":"Moraujo"},{"id":129,"text":"Morrinhos"},{"id":130,"text":"Mucambo"},{"id":131,"text":"Mulungu"},{"id":132,"text":"Nova Olinda"},{"id":133,"text":"Nova Russas"},{"id":134,"text":"Novo Oriente"},{"id":297,"text":"Núcleos de Justiça 4.0"},{"id":203,"text":"Ocara"},{"id":135,"text":"Orós"},{"id":136,"text":"Pacajus"},{"id":137,"text":"Pacatuba"},{"id":138,"text":"Pacoti"},{"id":204,"text":"Pacuja"},{"id":205,"text":"Palhano"},{"id":139,"text":"Palmacia"},{"id":140,"text":"Paracuru"},{"id":141,"text":"Paraipaba"},{"id":142,"text":"Parambu"},{"id":206,"text":"Paramoti"},{"id":143,"text":"Pedra Branca"},{"id":207,"text":"Penaforte"},{"id":144,"text":"Pentecoste"},{"id":145,"text":"Pereiro"},{"id":146,"text":"Pindoretama"},{"id":147,"text":"Piquet Carneiro"},{"id":208,"text":"Pires Ferreira"},{"id":293,"text":"Plantão Judiciário - Interior do Estado"},{"id":148,"text":"Poranga"},{"id":149,"text":"Porteiras"},{"id":209,"text":"Potengi"},{"id":210,"text":"Potiretama"},{"id":150,"text":"Quiterianópolis"},{"id":151,"text":"Quixadá"},{"id":153,"text":"Quixelô"},{"id":154,"text":"Quixeramobim"},{"id":155,"text":"Quixeré"},{"id":156,"text":"Redenção"},{"id":157,"text":"Reriutaba"},{"id":158,"text":"Russas"},{"id":159,"text":"Saboeiro"},{"id":211,"text":"Salitre"},{"id":160,"text":"Santa Quitéria"},{"id":161,"text":"Santana do Acaraú"},{"id":162,"text":"Santana do Cariri"},{"id":163,"text":"São Benedito"},{"id":164,"text":"São Gonçalo do Amarante"},{"id":212,"text":"São João do Jaguaribe"},{"id":165,"text":"São Luis do Curu"},{"id":289,"text":"SEEU"},{"id":166,"text":"Senador Pompeu"},{"id":213,"text":"Senador Sá"},{"id":167,"text":"Sobral"},{"id":168,"text":"Solonópole"},{"id":169,"text":"Tabuleiro do Norte"},{"id":170,"text":"Tamboril"},{"id":214,"text":"Tarrafas"},{"id":171,"text":"Tauá"},{"id":215,"text":"Tejucuoca"},{"id":173,"text":"Tianguá"},{"id":175,"text":"Trairi"},{"id":900,"text":"Tribunal de Justiça"},{"id":901,"text":"TURMAS RECURSAIS DOS JUIZADOS ESPECIAIS"},{"id":216,"text":"Tururu"},{"id":176,"text":"Ubajara"},{"id":217,"text":"Umari"},{"id":177,"text":"Umirim"},{"id":178,"text":"Uruburetama"},{"id":179,"text":"Uruoca"},{"id":180,"text":"Varjota"},{"id":181,"text":"Várzea Alegre"},{"id":182,"text":"Viçosa do Ceará"},{"id":301,"text":"1º Núcleo Custódia/Garantias-Juazeiro"},{"id":13,"text":"1ª Unidade do JECC - Antônio Bezerra"},{"id":2,"text":"10ª Unidade do JECC - Bairro de Fátima"},{"id":3,"text":"11ª Unidade do JECC - Tancredo Neves"},{"id":4,"text":"12ª Unidade do JECC - Anexo F. Beviláqua"},{"id":6,"text":"13ª Unidade do JECC - Monte Castelo"},{"id":7,"text":"14ª Unidade do JECC - Bom Sucesso"},{"id":8,"text":"15ª Unidade do JECC - Bairro do Ceará"},{"id":9,"text":"16ª Unidade do JECC - Piedade"},{"id":10,"text":"17ª Unidade do JECC - Parangaba"},{"id":11,"text":"18ª Unidade do JECC - José Walter"},{"id":12,"text":"19ª Unidade do JECC - Serrinha"},{"id":302,"text":"2º Núcleo Custódia/Garantias-Iguatu"},{"id":15,"text":"2ª Unidade do JECC - Maraponga"},{"id":14,"text":"20ª Unidade do JECC - Centro"},{"id":242,"text":"22ª Unidade do JECC - Fafor/Faece"},{"id":235,"text":"23ª Unidade do JECC - Unifor"},{"id":221,"text":"24ª Unidade do JECC - Fanor"},{"id":303,"text":"3º Núcleo Custódia/Garantias-Quixadá"},{"id":16,"text":"3ª Unidade do JECC - Anexo Farias Brito"},{"id":17,"text":"3ª Unidade do JECC - Mucuripe"},{"id":300,"text":"4º Núcleo Custódia/Garantias-Caucaia"},{"id":18,"text":"4ª Unidade do JECC - Benfica"},{"id":298,"text":"5º Núcleo Custódia/Garantias-Sobral"},{"id":19,"text":"5ª Unidade do JECC - Conjunto Ceará"},{"id":299,"text":"6º Núcleo Custódia/Garantias-Crateús"},{"id":231,"text":"6ª Unidade do JECC - Anexo Unifor"},{"id":20,"text":"6ª Unidade do JECC - Messejana"},{"id":312,"text":"7º Núcleo Custódia/Garantias-Maracanaú"},{"id":21,"text":"7ª Unidade do JECC - Montese"},{"id":22,"text":"8ª Unidade do JECC - Anexo Benfica"},{"id":23,"text":"8ª Unidade do JECC - Benfica"},{"id":24,"text":"9ª Unidade do JECC - FA7"}]');
+    })(jQuery)
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+<form name="consultarProcessoForm" method="GET" action="/cpopg/search.do" autocomplete="off" enctype="" onsubmit="return applySubmit(this, eval('function spwSubmit(t, e){decodificaInputMulSelOnSubmit();if (!IS_enableSubmit) return false; return BENV_isCamposValidos(t); } spwSubmit(this, event);'));" id="formConsulta" target="">
+	<input type="hidden" name="conversationId" value="">
+
+<section class="form__consultar-processos">
+
+
+                    
+                
+
+
+
+
+
+                <div class="form__consultar-processos__item form__consultar-processos__item--consultar">
+                    <div class="form-group">
+                        
+                        <label for="cbPesquisa" class="unj-label unj-label--required">Consultar por</label>
+                        
+
+
+
+
+
+
+
+
+
+	<select name="cbPesquisa" class="form-control" id="cbPesquisa"><option value="NUMPROC">Número do Processo</option>	
+		
+	 		<option value="NMPARTE" selected="selected">Nome da parte</option>	
+		
+	 		<option value="DOCPARTE">Documento da Parte</option>	
+		
+	 		<option value="NMADVOGADO">Nome do Advogado</option>	
+		
+	 		<option value="NUMOAB">OAB</option>	
+		
+	 		<option value="PRECATORIA">Nº da Carta Precatória na Origem</option>	
+		
+	 		<option value="DOCDELEG">Nº do Documento na Delegacia</option>	
+		
+	 		<option value="NUMCDA">CDA</option></select>
+
+
+                    </div>
+                </div>
+
+
+
+
+                     
+                    <div class="form__consultar-processos__item form__consultar-processos__item--tipo-de-consulta">
+                        <div class="form-group">
+                         
+                            
+                                
+                                
+                                    <div id="NUMPROC">
+                                        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+		
+	
+	
+		
+	
+	
+		
+	
+
+	
+
+	
+	
+		<script>$.saj.numeroProcesso.desabilitarNumeroOculto = false;</script>
+	
+	
+		
+	
+	<script type="text/javascript">
+		(function($){
+			$(function() {
+                //remove comportamento de exibir mensagem de erro típica do html5
+                $('form:visible').attr('novalidate', '');
+
+                var camposNumeroProcesso = $('[name="numeroDigitoAnoUnificado"], [name="foroNumeroUnificado"], [id^="JTRNumeroUnificado"], [id^="nuProcessoUnificado"], [id^="nuProcessoAntigoFormatado"]');
+                camposNumeroProcesso.addClass('form-control-nuProcesso');
+                camposNumeroProcesso.removeAttr('onkeypress onblur onkeydown onmousemove onmouseout onmouseover onfocus');
+
+				if($.browser.msie){
+					$('.grupoRadio').find('input:radio:visible:enabled').attr('aria-required','');
+					return;
+				}
+				$('.grupoRadio').attr('aria-required','').attr('required','');
+			});
+		})(jQuery);
+	</script>
+
+	<style>
+
+		/* remove borda vermelha de elementos required */
+		input:invalid {
+			box-shadow: none;
+		}
+		[name="numeroDigitoAnoUnificado"] {
+			width: 130px;
+		}
+		#JTRNumeroUnificado {
+			width: 50px;
+		}
+		[name="foroNumeroUnificado"] {
+			
+				
+				
+					width: 60px;
+				
+			
+		}
+		[id^='nuProcessoAntigoFormatado'] {
+			width: 247px;
+		}
+	</style>
+
+
+<div id="interna_NUMPROC" style="float:left">
+	<span id="linhaProcessoUnificado">
+        
+            
+                
+
+
+
+
+
+
+
+
+	
+
+
+	
+	
+	
+	
+	
+	
+
+
+
+
+
+
+ 
+<input type="text" name="numeroDigitoAnoUnificado" maxlength="25" size="20" value="" formatType="TEXT" onkeypress="CT_KPS(this, event);" onblur="CT_BLR(this);" onkeydown="CT_KDN(this, event);" onmousemove="CT_MMOV(this, event);" onmouseout="CT_MOUT(this, event);" onmouseover="CT_MOV(this, event);" onfocus="C_OFC(this, event);" id="numeroDigitoAnoUnificado">
+<input type="text" id="JTRNumeroUnificado" size="3" disabled="disabled" value="8.06"/>
+<input type="text" name="foroNumeroUnificado" maxlength="4" size="3" value="" formatType="TEXT" onkeypress="CT_KPS(this, event);" onblur="CT_BLR(this);" onkeydown="CT_KDN(this, event);" onmousemove="CT_MMOV(this, event);" onmouseout="CT_MOUT(this, event);" onmouseover="CT_MOV(this, event);" onfocus="C_OFC(this, event);" id="foroNumeroUnificado">
+<input type="hidden" name="dadosConsulta.valorConsultaNuUnificado" value="" id="nuProcessoUnificadoFormatado">
+
+	<input type="hidden" name="dadosConsulta.valorConsultaNuUnificado" value="UNIFICADO" id="tipoNumero">
+
+
+<script>
+	(function($){
+		$(function() {
+			var saj = $.saj;
+			var mascaraNumeroUnificado = saj.mascaraNumeroUnificado;
+			var $campoNumeroDigitoAnoUnificado = $('#numeroDigitoAnoUnificado');
+			var $campoForoNumeroUnificado = $('#foroNumeroUnificado');
+			
+				
+				
+					saj.configurarMascaraInput($campoForoNumeroUnificado, '0000');
+				
+			
+			saj.configurarMascaraInput($campoNumeroDigitoAnoUnificado, mascaraNumeroUnificado, $campoForoNumeroUnificado,{
+				afterPaste: afterPaste			
+			});
+			saj.bindCamposNumeroProcesso('');
+			
+		});		
+		
+		var afterPaste = function(textoOriginal) {
+			var texto = getDigits(textoOriginal);
+			if (!texto || texto.length < 16) {
+				return;
+			}
+			
+			var jtr = $('#JTRNumeroUnificado').val();
+			jtr = getDigits(jtr);
+			var jtrDigitado = texto.substring(13,16);
+			var foroUnificado;
+			//pega os 4 ultimos digitos, e caso o jtr colado for o mesmo, coloca os 4 no campo de foro unificado
+			//se o jtr for diferente nao coloca nada no campo de foro unificado
+			if (jtr == jtrDigitado) {
+				foroUnificado = texto.substring(16,texto.length);
+			} else {
+				foroUnificado = '';
+			}
+			
+			var numeroDigitoAno = texto.substring(0,13);
+			var $numeroDigitoAno = $('#numeroDigitoAnoUnificado');
+			$numeroDigitoAno.val(numeroDigitoAno);
+			
+			var $foroNumeroUnificado = $('#foroNumeroUnificado');
+			$foroNumeroUnificado.val(foroUnificado);
+			$foroNumeroUnificado.trigger('blur');
+			$foroNumeroUnificado.focus();
+		};
+		
+		var getDigits = function(texto) {
+			return texto.replace(/[^0-9]/g, '');
+		};
+		$('#numeroDigitoAnoUnificado').attr('aria-label','Número do processo. Informe os treze primeiros dígitos do número do processo.');
+		$('#foroNumeroUnificado').attr('aria-label','Informe os quatro últimos dígitos do número do processo.');
+	})(jQuery);
+	
+</script>
+
+            
+            
+        
+	</span>
+	
+		
+		
+			<span id="linhaProcessoAntigo">
+				
+					
+						<input type="text" name="dadosConsulta.valorConsulta" maxlength="25" value="JOAO CARLOS DA SILVA" formatType="TEXT" onkeypress="CT_KPS(this, event);" onblur="CT_BLR(this);" onkeydown="CT_KDN(this, event);" onmousemove="CT_MMOV(this, event);" onmouseout="CT_MOUT(this, event);" onmouseover="CT_MOV(this, event);" onfocus="C_OFC(this, event);" disabled="disabled" id="nuProcessoAntigoFormatado">
+					
+					
+				
+			</span>
+		
+	
+	<div>
+		
+		<fieldset class="grupoRadio" style="margin:0;padding:0;border:none;text-align:right">
+			<legend style="display:block;font-size:0;">
+				
+			</legend>
+			<input type="radio" id="radioNumeroUnificado" name="dadosConsulta.tipoNuProcesso" value="UNIFICADO" style="vertical-align:text-bottom;"/>
+			<label for="radioNumeroUnificado">Unificado</label>
+			<input type="radio" id="radioNumeroAntigo" name="dadosConsulta.tipoNuProcesso" value="SAJ" style="vertical-align:text-bottom;"/>
+			<label for="radioNumeroAntigo">Outros</label>
+		</fieldset>
+		
+	</div>
+</div>
+
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <div><b>Número de Processo Unificado</b></div><div>O sistema disponibiliza facilidades no preenchimento do número unificado, seu formato é NNNNNNN-DD.AAAA.J.TR.OOOO:</div><div style="padding-top: 3px;"><b>NNNNNNN</b>: Caso o número possua zeros à esquerda o sistema preenche-os automaticamente, basta informar o número e o dígito "-" ou ".". Exemplo: ao informar "310-" o sistema irá preencher "0000310-".</div><div><b>DD</b>     : Deve ser preenchido pelo usuário.</div><div><b>AAAA</b>   : Ao informar dois dígitos para o ano o sistema completa o mesmo, basta pressionar a tecla Tab. Exemplo: ao informar "08" e "Tab" o sistema irá preencher "2008".</div><div><b>J.TR</b>    : São números fixos preenchidos pelo sistema.Exemplo: 8.99.</div><div><b>OOOO</b>   : Caso o número possua zeros à esquerda o sistema preenche-os automaticamente, basta informar o número pressionar a tecla Tab. Exemplo: ao informar "10" e "Tab" o sistema irá preencher "0010".</div>
+        </div>
+    </div>
+</div>
+
+                                    </div>
+                                
+                                
+                                
+                                
+                            
+                        
+                            
+                                
+                                
+                                
+                                
+                                    <div id="NMPARTE">
+                                        <div style="float:left; width: calc(100% - 30px);">
+                                            <input type="text" id="campo_NMPARTE" class="form-control" name="dadosConsulta.valorConsulta" value="JOAO CARLOS DA SILVA" disabled="disabled"></div>
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <b>Nome da parte</b><br/>Digite nomes e sobrenomes de qualquer parte do processo, não se preocupe com letras maiúsculas ou acentuação.<br/>Com a pesquisa fonética é possível buscar por nomes que não tenham sido digitados corretamente.<br/>Se você digitar "caio Silva", por exemplo, o sistema buscará as partes que tiverem estas palavras no nome, ou seja, "<b>caio</b> da <b>silva</b>", "<b>Kaio silva</b>", entre outros.
+        </div>
+    </div>
+</div>
+
+                                        <label class="unj-choice unj-mt-4">
+                                            <input type="checkbox" name="chNmCompleto" value="true">
+                                            <span id="pesquisarPorNomeCompleto" class="unj-choice__icon glyph glyph-checkmark"></span>
+                                            Pesquisar por nome completo
+                                        </label>
+                                    </div>
+                                
+                                
+                            
+                        
+                            
+                                
+                                
+                                
+                                
+                                
+                                    <div id="DOCPARTE">
+                                        <div style="float:left;width: calc(100% - 30px);"><input type="text" id="campo_DOCPARTE" class="form-control" name="dadosConsulta.valorConsulta" value="JOAO CARLOS DA SILVA" disabled="disabled"></div>
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <b>Documento da parte</b><br/>Digite o número completo de algum documento de qualquer parte do processo, por exemplo 012345678 (RG), 12345678901 (CPF) etc.<br/>Se o número do documento possuir letras, digite-as também, por exemplo 012345678X.<br/>Não é necessário informar pontos, traços e barras.
+        </div>
+    </div>
+</div>
+
+                                    </div>
+                                
+                            
+                        
+                            
+                                
+                                
+                                
+                                
+                                    <div id="NMADVOGADO">
+                                        <div style="float:left; width: calc(100% - 30px);">
+                                            <input type="text" id="campo_NMADVOGADO" class="form-control" name="dadosConsulta.valorConsulta" value="JOAO CARLOS DA SILVA" disabled="disabled"></div>
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <b>Nome do advogado</b><br/>Digite nomes e sobrenomes de qualquer advogado, não se preocupe com letras maiúsculas ou acentuação.<br/>Com a pesquisa fonética é possível buscar por nomes que não tenham sido digitados corretamente.<br/>Se você digitar "caio Silva", por exemplo, o sistema buscará as partes que tiverem estas palavras no nome, ou seja, "caio da silva", "Kaio silva", entre outros.
+        </div>
+    </div>
+</div>
+
+                                        <label class="unj-choice unj-mt-4">
+                                            <input type="checkbox" name="chNmCompleto" value="true">
+                                            <span id="pesquisarPorNomeCompleto" class="unj-choice__icon glyph glyph-checkmark"></span>
+                                            Pesquisar por nome completo
+                                        </label>
+                                    </div>
+                                
+                                
+                            
+                        
+                            
+                                
+                                
+                                
+                                
+                                
+                                    <div id="NUMOAB">
+                                        <div style="float:left;width: calc(100% - 30px);"><input type="text" id="campo_NUMOAB" class="form-control" name="dadosConsulta.valorConsulta" value="JOAO CARLOS DA SILVA" disabled="disabled"></div>
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <b>OAB</b><br/>Digite o número completo da OAB do advogado, incluindo letras e a sigla do estado de origem, por exemplo 654321SP.<br/>Quando você for preencher este campo, não se preocupe em digitar barras e letras maiúsculas.
+        </div>
+    </div>
+</div>
+
+                                    </div>
+                                
+                            
+                        
+                            
+                                
+                                
+                                
+                                
+                                
+                                    <div id="PRECATORIA">
+                                        <div style="float:left;width: calc(100% - 30px);"><input type="text" id="campo_PRECATORIA" class="form-control" name="dadosConsulta.valorConsulta" value="JOAO CARLOS DA SILVA" disabled="disabled"></div>
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <b>Nº da carta precatória na origem</b><br/>Digite o número completo de origem da carta precatória, desconsiderando barras, traços e pontos, por exemplo 01234, 1234/07 (2007-0001234-1).<br/>Eles possuem formatos diferentes, por isso não é necessário digitar traços, pontos, barras ou parênteses.
+        </div>
+    </div>
+</div>
+
+                                    </div>
+                                
+                            
+                        
+                            
+                                
+                                
+                                
+                                
+                                
+                                    <div id="DOCDELEG">
+                                        <div style="float:left;width: calc(100% - 30px);"><input type="text" id="campo_DOCDELEG" class="form-control" name="dadosConsulta.valorConsulta" value="JOAO CARLOS DA SILVA" disabled="disabled"></div>
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <b>Nº do documento na delegacia</b><br/>Digite o número completo do documento emitido na delegacia, por exemplo 01/2005, 100/2007.<br/>Não é necessário informar barras, traços ou pontos.
+        </div>
+    </div>
+</div>
+
+                                    </div>
+                                
+                            
+                        
+                            
+                                
+                                
+                                
+                                
+                                
+                                    <div id="NUMCDA">
+                                        <div style="float:left;width: calc(100% - 30px);"><input type="text" id="campo_NUMCDA" class="form-control" name="dadosConsulta.valorConsulta" value="JOAO CARLOS DA SILVA" disabled="disabled"></div>
+                                        
+
+
+
+
+
+<div class="unj-form-control-group__icon">
+    <div class="dropdown show">
+        <a href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyph glyph-info" aria-hidden="true"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right  tooltip-campos" aria-labelledby="dropdownMenuLink">
+            <b>CDA</b><br/>Digite o número completo da CDA (Certidão de Dívida Ativa), referente ao processo que deseja consultar.
+        </div>
+    </div>
+</div>
+
+                                    </div>
+                                
+                            
+                        
+                        </div>
+                    </div>
+
+
+
+        
+                 <div class="form__consultar-processos__item form__consultar-processos__item--foro">
+                     <div class="form-group">
+                        <label for="comboForo" class="unj-label" style="display: inline-block; width: 100%">
+                            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+		
+		
+					
+
+
+		
+
+
+Foro
+
+</label>
+
+                         
+                        <input type="text" id="comboForo" name="cdForo" class="form-control" value="1">
+
+                        
+                     </div>
+                </div>
+        
+
+        
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+
+        <div class="form__consultar-processos__item form__consultar-processos__item--btn-consultar">
+            <div class=" form-group">
+                 <input id="botaoConsultarProcessos" type="submit" class="btn btn-primary" value="Consultar">
+            </div>
+        </div>
+
+    </section>
+
+</form>
+
+
+			</form>
+		
+		
+			
+			
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="paginacaoSuperior" class="row unj-mt-8">
+	<div class="col-md-4">
+	<input name="action" type="hidden" value="/trocarPagina.do?conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1"/>
+	<input name="divConteudo" type="hidden" value=""/>
+	
+		<span id="contadorDeProcessos" class="resultadoPaginacao unj-font unj-lh-32 unj-caption">
+			57 Processos encontrados
+		</span>
+	
+	</div>
+	<div class="col-md-12 text-md-right">
+		<span id="quantidadeProcessosNaPagina" class="unj-font unj-caption unj-lh-32 unj-secondary">
+			Mostrando de 1
+			até 25
+		</span>
+
+		<ul class="unj-pagination unj-d-ib unj-ml-20 unj-va-t" style="margin-right: 10px;">
+			
+
+			
+				
+
+				
+				
+				
+				
+					
+				
+				
+					
+					
+						<li class="active">
+						<a href="javascript:" class="paginaAtual">
+							1
+						</a>
+						</li>
+					
+					
+					
+				
+					
+					
+					
+						
+						<li>
+							<a class="paginacao" aria-label="Página 2" href="/cpopg/trocarPagina.do?paginaConsulta=2&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1">
+								2
+							</a>
+						</li>
+					
+					
+				
+					
+					
+					
+						
+						<li>
+							<a class="paginacao" aria-label="Página 3" href="/cpopg/trocarPagina.do?paginaConsulta=3&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1">
+								3
+							</a>
+						</li>
+					
+					
+				
+
+				
+					
+					<li>
+					<a class="unj-pagination__next icon-next" href="/cpopg/trocarPagina.do?paginaConsulta=2&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1" title="Próxima página"></a>
+					</li>
+				
+			
+			
+		</ul>
+	</div>
+</div>
+			<div id="listagemDeProcessos">
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+		
+			
+		
+		
+	
+	
+	
+	
+		
+    	
+		<h2 class="unj-subtitle unj-mt-20 foroDosProcessos">
+			Fortaleza - Fórum Clóvis Beviláqua
+		</h2>	
+		<ul class="unj-list-row">
+    
+    <li>
+		<div id="divProcesso8500012QK0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=8500012QK0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0201452-08.2026.8.06.0293  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Silva Cabral
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Tráfico de Drogas e Condutas Afins</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">16/02/2026 - Vara de Delitos de Organizações Criminosas</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			
+				
+					<div>
+						<a id="incidentesRecursos_8500012QK0000" href="#" cdProcesso="8500012QK0000" cdForoProcesso="1" class="unj-link-collapse">						
+						<span>
+							<i class="unj-link-collapse__icon glyph glyph-chevron-right" id="imagemMais8500012QK0000"></i>
+							<i class="unj-link-collapse__icon glyph glyph-chevron-down" id="imagemMenos8500012QK0000" style="display: none;"></i>
+							Incidentes e recursos
+						</span>
+						</a>
+						<img id="loading8500012QK0000" style="height:15px; display: none; margin-left:10px;" src="/cpopg/imagens/ajax-loader.gif" />
+					</div>
+				
+				<div  style="margin-top: 5px; display: none;" id="divFilhos8500012QK0000" >
+				</div>
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002ROWT0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002ROWT0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0202187-44.2026.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Autuado:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos da Silva Henrique
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Auto de Prisão em Flagrante</div>
+   		<div class="assuntoPrincipalProcesso">Furto Qualificado</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">31/01/2026 - 10ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002R6I40000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002R6I40000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0231357-95.2025.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Ferro da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Furto Qualificado</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">17/12/2025 - 5ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002QVUH0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002QVUH0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0229708-95.2025.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Ferro da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Furto</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">24/11/2025 - 3ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso880009BWH0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=880009BWH0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0204263-34.2023.8.06.0296  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Ferreira da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Roubo Majorado</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">21/09/2023 - 18ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002QH040000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002QH040000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0227318-55.2025.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Costa da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Furto Qualificado</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">22/10/2025 - 2ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002PE2Y0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002PE2Y0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0220616-93.2025.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Autuado:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Ferro da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Furto</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">18/07/2025 - 10ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002M2CU0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002M2CU0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0276895-36.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerente:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Nascimento Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Práticas Abusivas</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">18/10/2024 - 19ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002M1WH0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002M1WH0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0276717-87.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerente:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Nascimento Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Práticas Abusivas</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">17/10/2024 - 17ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002M1WE0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002M1WE0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0276718-72.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerente:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Nascimento Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Práticas Abusivas</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">17/10/2024 - 29ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002LYP00000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002LYP00000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0275184-93.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Impetrante:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Juan Carlos da Silva Ferreira
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Mandado de Segurança Cível</div>
+   		<div class="assuntoPrincipalProcesso">Multas e demais Sanções</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">11/10/2024 - 5ª Vara da Fazenda Pública (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002LPIZ0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002LPIZ0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0270731-55.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerido:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Silva Barros Júnior
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Despejo por Falta de Pagamento</div>
+   		<div class="assuntoPrincipalProcesso">Despejo por Inadimplemento</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">24/09/2024 - 25ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002LJA10000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002LJA10000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0267699-42.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerente:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos da Silva Penha
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Incapacidade Laborativa Permanente</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">11/09/2024 - 18ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002KIN80000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002KIN80000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0250160-63.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerente:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos da Silva Amorim
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Incapacidade Laborativa Permanente</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">10/07/2024 - 35ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002K5GV0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002K5GV0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0242810-24.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Silva Oliveira
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Roubo Majorado</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">15/06/2024 - 11ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002GUCE0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002GUCE0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0283644-06.2023.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Ferreira da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Roubo Majorado</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">13/12/2023 - 13ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002JECU0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002JECU0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0019158-59.2024.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerido:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Santos da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Carta Precatória Cível</div>
+   		<div class="assuntoPrincipalProcesso">Citação</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">24/04/2024 - 32ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso88000AJDB0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=88000AJDB0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0205186-60.2023.8.06.0296  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Ferreira da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Roubo</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">17/11/2023 - 5ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002GJY80000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002GJY80000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0281431-27.2023.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Indiciado:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos da Silva Magalhaes
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Inquérito Policial</div>
+   		<div class="assuntoPrincipalProcesso">Ameaça</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">04/12/2023 - 11ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002EYF60000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002EYF60000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0271002-98.2023.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            JOÃO CARLOS DA SILVA PEREIRA ALVES
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Crimes do Sistema Nacional de Armas</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">22/10/2023 - 8ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso880009BWI0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=880009BWI0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0204262-49.2023.8.06.0296  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Ferreira da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Roubo Majorado</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">21/09/2023 - 11ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01002D9Y40000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01002D9Y40000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0260333-83.2023.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Réu:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            JOÃO CARLOS SILVA DOS SANTOS
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Ação Penal - Procedimento Ordinário</div>
+   		<div class="assuntoPrincipalProcesso">Roubo</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">08/09/2023 - 8ª Vara Criminal (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01000RB110000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01000RB110000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0118985-53.2018.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerente:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos Ferreira da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Nulidade e Anulação de Partilha e Adjudicação de Herança</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">23/03/2018 - 17ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcessoZZ000CEFW0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=ZZ000CEFW0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0391880-58.2000.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Requerente:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            Joao Carlos da Silva Magalhaes
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Contratos Bancários</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">08/09/1998 - 7ª Vara Cível (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+	
+		
+		
+			
+		
+	
+	
+	
+	
+    <li>
+		<div id="divProcesso01001PNFN0000" class="" >
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   	
+   		
+   		
+   		
+   	
+   	
+
+
+
+	
+	
+		
+		
+			
+		
+	
+	<input type="hidden" name="_csrf" value="3a0199d2-1484-4e78-a6b4-31617071efa5" />
+	
+
+
+<div class="row unj-ai-c home__lista-de-processos">
+	<div class="nuProcesso col-md-3">
+		
+
+
+
+<!-- Atributos -->
+
+
+
+
+
+
+
+
+
+	
+		<a href="/cpopg/show.do?processo.codigo=01001PNFN0000&processo.foro=1&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1&paginaConsulta=1" class="linkProcesso">
+			0259869-30.2021.8.06.0001  
+		</a>
+		<span class="" >
+			
+		</span>
+	
+	
+
+
+	</div>
+	
+	    <div class="col-md-3">
+		    	<label class="unj-label tipoDeParticipacao">
+		    		Cur. Esp:
+		    	</label>
+		    	<div class="unj-base-alt nomeParte">
+                    
+                        
+                        
+                            João Carlos Araújo da Silva
+                        
+                    
+			    </div>
+	       </div>
+	
+	<div class="col-md-4">
+		<div class="classeProcesso">Procedimento Comum Cível</div>
+   		<div class="assuntoPrincipalProcesso">Obrigação de Fazer / Não Fazer</div>
+    </div>
+
+    
+
+	<div class="col-md-3" >
+  		<label class="unj-label labelRecebidoEm">
+  			Recebido em:
+  		</label>
+ 		<div class="dataLocalDistribuicaoProcesso">30/08/2021 - 2ª Vara da Fazenda Pública (SEJUD 1º Grau)</div>
+    </div>
+
+  	
+  	
+	
+</div>
+
+			 
+		</div>
+	</li>
+
+
+			</div>
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="paginacaoInferior" class="row unj-mt-8">
+	<div class="col-md-4">
+	<input name="action" type="hidden" value="/trocarPagina.do?conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1"/>
+	<input name="divConteudo" type="hidden" value=""/>
+	
+		<span id="contadorDeProcessos" class="resultadoPaginacao unj-font unj-lh-32 unj-caption">
+			57 Processos encontrados
+		</span>
+	
+	</div>
+	<div class="col-md-12 text-md-right">
+		<span id="quantidadeProcessosNaPagina" class="unj-font unj-caption unj-lh-32 unj-secondary">
+			Mostrando de 1
+			até 25
+		</span>
+
+		<ul class="unj-pagination unj-d-ib unj-ml-20 unj-va-t" style="margin-right: 10px;">
+			
+
+			
+				
+
+				
+				
+				
+				
+					
+				
+				
+					
+					
+						<li class="active">
+						<a href="javascript:" class="paginaAtual">
+							1
+						</a>
+						</li>
+					
+					
+					
+				
+					
+					
+					
+						
+						<li>
+							<a class="paginacao" aria-label="Página 2" href="/cpopg/trocarPagina.do?paginaConsulta=2&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1">
+								2
+							</a>
+						</li>
+					
+					
+				
+					
+					
+					
+						
+						<li>
+							<a class="paginacao" aria-label="Página 3" href="/cpopg/trocarPagina.do?paginaConsulta=3&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1">
+								3
+							</a>
+						</li>
+					
+					
+				
+
+				
+					
+					<li>
+					<a class="unj-pagination__next icon-next" href="/cpopg/trocarPagina.do?paginaConsulta=2&conversationId=&cbPesquisa=NMPARTE&dadosConsulta.valorConsulta=JOAO+CARLOS+DA+SILVA&cdForo=1" title="Próxima página"></a>
+					</li>
+				
+			
+			
+		</ul>
+	</div>
+</div>
+		
+
+		
+	
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+		
+
+
+
+<footer>
+    <nav class="navbar__footer">
+        <div class="navbar__footer__container">
+
+            <ul class="navbar__footer__list-brand">
+                <li class="navbar__footer__list-brand__item">
+                    <a href="https://www.softplan.com.br/solucoes/saj-tribunais/" class="navbar__footer__list-brand__item__link link_softplan_tribunais">
+                        <img src="https://esaj.tjce.jus.br/esaj-layout/img/brand/icon-saj.png" alt="SAJ">
+                    </a>
+                </li>
+                <li class="navbar__footer__list-brand__item">
+                    <a href="https://www.softplan.com.br/" class="navbar__footer__list-brand__item__link link_softplan">
+                        <img src="https://esaj.tjce.jus.br/esaj-layout/img/brand/icon-softplan.png" alt="Softplan">
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="navbar__footer__list-actions">
+            </ul>
+        </div>
+    </nav>
+</footer>
+
+	
+
+
+
+
+</body>
+
+
+
+</html>
