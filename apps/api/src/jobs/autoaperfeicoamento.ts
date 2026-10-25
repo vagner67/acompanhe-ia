@@ -192,12 +192,15 @@ export function iniciarAutoAperfeicoamento(opts: AgendadorOpts): { parar: () => 
   const intervalo = horas * 3_600_000;
   let rodando = false;
   let parado = false;
+  // P0 (plano.md §2): o detector TEM de viver entre ciclos. Antes cada ciclo criava
+  // um `DetectorDeriva` novo → histórico vazio → deriva nunca disparava em produção.
+  const detector = opts.detector ?? new DetectorDeriva();
 
   const executar = async () => {
     if (rodando || parado) return;
     rodando = true;
     try {
-      const r = await rodarCicloAuto(opts);
+      const r = await rodarCicloAuto({ ...opts, detector });
       opts.onResultado?.(r);
       if (!r.ok) {
         await opts.registrarEvento?.({ tipo: "auto.ciclo_falhou", detalhe: r.erro ?? "erro desconhecido", gravidade: "alerta" });

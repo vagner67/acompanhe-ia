@@ -197,7 +197,88 @@ export function adminApi(token: string) {
       { key, enabled, payload },
     ),
     opsRotate: () => post<{ ok: boolean }>("/v1/admin/ops/rotate-service-token"),
+    // Núcleo de Coletores Auto-Aperfeiçoável (plano.md §4)
+    nucleoCatalogo: () =>
+      get<{ total: number; porModulo: Array<{ modulo: string; coletores: number }>; coletores: ColetorDto[] }>("/v1/admin/nucleo/catalogo"),
+    nucleoEstado: () =>
+      get<{ total: number; saudaveis: number; desativados: number; semMedicao: number; coletores: EstadoColetorDto[] }>("/v1/admin/nucleo/estado"),
+    nucleoColetor: (id: string) =>
+      get<{ coletor: ColetorDto; estado: EstadoColetorDto | null; metricas: MetricaDto[]; acoes: AcaoDto[] }>(
+        `/v1/admin/nucleo/coletor/${encodeURIComponent(id)}`,
+      ),
+    nucleoCiclo: (body: { coletores?: string[]; modulos?: string[]; maxVizinhos?: number } = {}) =>
+      post<{ ok: boolean; ms: number; resultados: ResultadoCicloDto[]; promovidos: string[]; revertidos: string[]; desativados: string[]; pausados: string[] }>(
+        "/v1/admin/nucleo/ciclo",
+        body,
+      ),
+    nucleoReativar: (id: string) => post<{ ok: boolean; coletorId: string }>(`/v1/admin/nucleo/coletor/${encodeURIComponent(id)}/reativar`),
+    nucleoParams: (id: string, params: Record<string, number | string | boolean>) =>
+      fetch(`${BASE}/v1/admin/nucleo/coletor/${encodeURIComponent(id)}/params`, {
+        method: "PUT",
+        headers: headers(token),
+        body: JSON.stringify({ params }),
+      }).then(j<{ ok: boolean; params: Record<string, number>; versao: number; descartados: string[] }>),
   };
+}
+
+// —— Núcleo de coletores ——
+export interface ColetorDto {
+  id: string;
+  modulo: string;
+  host: string;
+  familia: string;
+  descricao: string;
+  parametros?: string[];
+  canarios?: number | Array<{ id: string }>;
+  orcamento?: { rpm: number; rpd: number };
+  credencial?: string | null;
+  espaco?: Record<string, { tipo: string; min?: number; max?: number; passo?: number; opcoes?: number[] }>;
+}
+export interface EstadoColetorDto {
+  coletorId: string;
+  modulo?: string;
+  host?: string;
+  versao: number;
+  ativo: boolean;
+  score: number | null;
+  itens?: number;
+  ultimoOkEm?: string | null;
+  ultimoErro?: string | null;
+  proximaExecucaoEm?: string | null;
+  params: Record<string, number | string | boolean>;
+  atualizadoEm?: string;
+}
+export interface MetricaDto {
+  ts: string;
+  http: number | null;
+  ms: number;
+  itens: number;
+  ok: boolean;
+  erro: string | null;
+  captcha: boolean;
+  bloqueio: boolean;
+  score: number;
+}
+export interface AcaoDto {
+  ts: string;
+  origem: "ia" | "regras";
+  tipo: string;
+  acao: string;
+  evidencia: string;
+  resultado: string;
+  motivo: string;
+  versaoAntes: number;
+  versaoDepois: number;
+}
+export interface ResultadoCicloDto {
+  coletorId: string;
+  modulo: string;
+  acao: string;
+  origem: string;
+  score: number | null;
+  versao: number;
+  motivo: string;
+  resultado?: { itens: number; http: number | null; ms: number } | null;
 }
 
 // —— DTOs ——

@@ -846,9 +846,9 @@ export function PlanosScreen({ a, toast }: P) {
 // ═══════════════════════ PAINEL DE OPERAÇÕES (plano-painel-ops §3.6) ═══════════════════════
 // FORA do mini app (entry admin.html). Abas na ordem de investigação:
 // visão → serviços → alterações → saúde → filas → testes → regras → operadores → verificações → db.
-type Aba = "visao" | "servicos" | "alteracoes" | "saude" | "filas" | "testes" | "regras" | "operadores" | "verificacoes" | "db";
-const ABAS: Aba[] = ["visao", "servicos", "alteracoes", "saude", "filas", "testes", "regras", "operadores", "verificacoes", "db"];
-const ABAS_AUTO: Aba[] = ["visao", "servicos", "saude", "filas"];
+type Aba = "visao" | "servicos" | "fontes" | "alteracoes" | "saude" | "filas" | "testes" | "regras" | "operadores" | "verificacoes" | "db";
+const ABAS: Aba[] = ["visao", "servicos", "fontes", "alteracoes", "saude", "filas", "testes", "regras", "operadores", "verificacoes", "db"];
+const ABAS_AUTO: Aba[] = ["visao", "servicos", "fontes", "saude", "filas"];
 
 function scoreColor(n: number): string {
   return n >= 90 ? "#3ddc84" : n >= 70 ? "#ffc857" : "#ff6b6b";
@@ -891,6 +891,7 @@ export function AdminScreen({ toast }: { toast: (m: string) => void }) {
     try {
       if (k === "visao") setDados({ overview: await aa.opsOverview(), kpis: await aa.kpis() });
       if (k === "servicos") setDados({ services: await aa.opsServices() });
+      if (k === "fontes") setDados({ nucleo: await aa.nucleoEstado(), nucleoCat: await aa.nucleoCatalogo() });
       if (k === "alteracoes") setDados({ timeline: await aa.opsTimeline(100) });
       if (k === "saude") setDados({ probes: await aa.opsProbes("api", 24), probesWeb: await aa.opsProbes("web", 24) });
       if (k === "filas") setDados({ queues: await aa.opsQueues(), logs: await aa.opsLogs(logSvc, 80) });
@@ -1027,6 +1028,92 @@ export function AdminScreen({ toast }: { toast: (m: string) => void }) {
           <pre className="mono" style={{ maxHeight: 260, overflow: "auto" }}>{String((dados.logs as { tail?: string } | undefined)?.tail ?? "(escolha um serviço)")}</pre>
         </div>
       )}
+
+      {aba === "fontes" && (() => {
+        const n = dados.nucleo as { total?: number; saudaveis?: number; desativados?: number; semMedicao?: number; coletores?: Array<Record<string, unknown>> } | undefined;
+        const cat = dados.nucleoCat as { total?: number; porModulo?: Array<{ modulo: string; coletores: number }> } | undefined;
+        const lista = n?.coletores ?? [];
+        const ciclo = dados.nucleoCiclo as { ms?: number; resultados?: Array<Record<string, unknown>> } | undefined;
+        const rodar = async () => {
+          if (!a) return;
+          try {
+            toast("⏳ medindo as fontes de verdade…");
+            const r = await a.nucleoCiclo({ maxVizinhos: 1 });
+            setDados((d) => ({ ...d, nucleoCiclo: r }));
+            toast(`✅ ciclo em ${Math.round((r.ms ?? 0) / 1000)}s · promovidas: ${r.promovidos.length} · revertidas: ${r.revertidos.length}`);
+            setDados((d) => ({ ...d, nucleo: undefined }));
+            void trocarAba("fontes");
+          } catch (e) {
+            toast(`⚠ ${(e as Error).message}`);
+          }
+        };
+        return (
+          <div className="card">
+            <h3>🔁 Fontes — auto-aperfeiçoamento de ponta a ponta</h3>
+            <p className="muted" style={{ fontSize: 13 }}>
+              {cat?.total ?? 0} coletores registrados · {n?.saudaveis ?? 0} saudáveis · {n?.desativados ?? 0} desativados ·{" "}
+              {n?.semMedicao ?? 0} ainda sem medição. Cada ciclo mede, diagnostica o erro, aplica o ajuste que passar no
+              canário e reverte o que piorar.
+            </p>
+            <div className="row" style={{ marginBottom: 10 }}>
+              <button className="btn" onClick={() => void rodar()}>Rodar ciclo agora</button>
+              {(cat?.porModulo ?? []).map((m) => (
+                <span key={m.modulo} className="chip on">{m.modulo}: {m.coletores}</span>
+              ))}
+            </div>
+            {ciclo?.resultados && (
+              <div className="card" style={{ marginBottom: 10 }}>
+                <b>Ciclo executado ({Math.round((ciclo.ms ?? 0) / 1000)}s)</b>
+                {(ciclo.resultados as Array<{ coletorId: string; acao: string; score: number | null; motivo: string }>).map((r) => (
+                  <div key={r.coletorId} className="row" style={{ fontSize: 13 }}>
+                    <span className="mono">{r.coletorId}</span>
+                    <span className="chip">{r.acao}</span>
+                    <span className="muted">score {r.score ?? "—"}</span>
+                    <span className="muted" style={{ flex: 1 }}>{r.motivo}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {lista.length === 0 && <p className="muted">Nenhum coletor medido ainda. Toque em “Rodar ciclo agora”.</p>}
+            {lista.map((l) => {
+              const id = String(l.coletorId);
+              const ativo = l.ativo !== false;
+              const score = typeof l.score === "number" ? l.score : null;
+              return (
+                <div key={id} className="card" style={{ marginBottom: 8 }}>
+                  <div className="row">
+                    <b className="mono">{id}</b>
+                    <span className="chip">{String(l.modulo ?? "")}</span>
+                    <span className="chip" style={{ color: ativo ? "#3ddc84" : "#ff6b6b" }}>
+                      {ativo ? "ativo" : "desativado"}
+                    </span>
+                    <span className="muted">v{String(l.versao)}</span>
+                    {score !== null && <span style={{ color: scoreColor(score) }}>{score.toFixed(1)} pts</span>}
+                    {l.proximaExecucaoEm ? <span className="muted">recuo até {String(l.proximaExecucaoEm).slice(11, 16)}</span> : null}
+                    <span style={{ flex: 1 }} />
+                    {!ativo && a && (
+                      <button
+                        className="chip"
+                        onClick={() => {
+                          a.nucleoReativar(id)
+                            .then(() => { toast("✅ reativado"); return trocarAba("fontes"); })
+                            .catch((e: Error) => toast(`⚠ ${e.message}`));
+                        }}
+                      >
+                        reativar
+                      </button>
+                    )}
+                  </div>
+                  <div className="muted mono" style={{ fontSize: 12 }}>
+                    params {JSON.stringify(l.params)}
+                  </div>
+                  {l.ultimoErro ? <div className="muted" style={{ fontSize: 12 }}>último erro: {String(l.ultimoErro)}</div> : null}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {aba === "alteracoes" && (
         <div className="card">

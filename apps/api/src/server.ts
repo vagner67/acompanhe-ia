@@ -26,6 +26,9 @@ import {
 import { assinaturasRoutes } from "./routes/assinaturas.js";
 import { adminRoutes, AdminJwt } from "./routes/admin.js";
 import { opsRoutes } from "./routes/ops.js";
+import { nucleoRoutes } from "./routes/nucleo.js";
+import { InMemoryNucleoStore, NucleoStoreResiliente, PrismaNucleoStore, type StoreNucleo } from "./nucleo/store.js";
+import { gravarSyncRunPrisma } from "./nucleo/syncrun.js";
 import { PrismaOpsStore } from "./ops/store.js";
 import { recordRequest } from "./ops/service.js";
 import { gamificacaoRoutes } from "./gamificacao/routes.js";
@@ -103,6 +106,12 @@ export interface AppDeps {
   emprestimos?: {
     store?: LoanStore;
     verificacao?: VerificacaoStore;
+  };
+  /** Override do núcleo de coletores (testes sem rede). */
+  nucleo?: {
+    store?: StoreNucleo;
+    fetchImpl?: typeof fetch;
+    env?: Record<string, string | undefined>;
   };
   /** Overrides para testes de Licitação (fetch do PNCP injetável). */
   licitacoes?: {
@@ -360,6 +369,23 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
     }),
   );
 
+  // Núcleo de Coletores Auto-Aperfeiçoável (plano.md §3–§4): UM store para o
+  // agendador contínuo E para as rotas — mesmo motivo do jurídico (caderno único).
+  const nucleoStore: StoreNucleo =
+    deps.nucleo?.store ??
+    (dbForStores
+      ? new NucleoStoreResiliente(new PrismaNucleoStore(dbForStores), (m) => app.log.warn(m))
+      : new InMemoryNucleoStore());
+  (app as typeof app & { nucleoColeta: typeof nucleoStore }).nucleoColeta = nucleoStore;
+  void app.register(
+    nucleoRoutes({
+      config: deps.config,
+      store: adminStore,
+      nucleo: nucleoStore,
+      ...(deps.nucleo?.fetchImpl ? { fetchImpl: deps.nucleo.fetchImpl } : {}),
+    }),
+  );
+
   // Gamificação — XP por ação real, streak, missões, conquistas, ranking opt-in.
   const gameStore = dbForStores ? new PrismaGameStore(dbForStores) : new InMemoryGameStore();
   void app.register(async (a) => {
@@ -509,6 +535,37 @@ async function main() {
             ms: r.msTotal,
           },
           "auto-aperfeicoamento: ciclo concluído",
+        );
+      },
+    });
+  }
+
+  // Coleta contínua de TODOS os módulos (plano.md §3.7): mede, corrige e escreve
+  // SyncRun. Desligável com NUCLEO_HABILITADO=0 (testes e deploy de diagnóstico).
+  if ((process.env.NUCLEO_HABILITADO ?? "1") !== "0") {
+    const { iniciarColetaContinua } = await import("./jobs/coleta.js");
+    const nucleo = (app as typeof app & { nucleoColeta: StoreNucleo }).nucleoColeta;
+    const dbSync = config.DATABASE_URL ? createDb(config.DATABASE_URL) : null;
+    const { sincronizarComPerfis } = await import("./nucleo/ponte-juridico.js");
+    iniciarColetaContinua({
+      store: nucleo,
+      // o que o NCA aprende nos coletores do Jurídico vale JÁ na busca do usuário
+      aoPromover: sincronizarComPerfis(
+        (app as typeof app & { juridicoPerfis: import("./juridico/autoaperfeicoamento.js").PerfilStore }).juridicoPerfis,
+      ),
+      ...(dbSync ? { gravarSyncRun: gravarSyncRunPrisma(dbSync) } : {}),
+      onResultado: (r) => {
+        app.log.info(
+          {
+            coletores: r.resultados.length,
+            promovidos: r.promovidos,
+            revertidos: r.revertidos,
+            desativados: r.desativados,
+            pausados: r.pausados,
+            truncadoPorPrazo: r.truncadoPorPrazo,
+            ms: r.ms,
+          },
+          "nucleo: ciclo de coleta concluído",
         );
       },
     });

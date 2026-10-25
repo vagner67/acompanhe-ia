@@ -901,3 +901,65 @@ model FonteMetrica {
   @@index([fonteId, ts])
   @@index([ts])
 }
+
+// ————————— Núcleo de Coletores Auto-Aperfeiçoável (plano.md §3.3) —————————
+// Estado vigente de cada coletor do app inteiro (jurídico, licitações, concursos,
+// investigação). Uma linha por coletor; `versao` sobe a cada promoção e o
+// histórico das ações fica em ColetorAcao (permite rollback auditável).
+model ColetorEstado {
+  coletorId       String    @id @db.VarChar(60)
+  params          Json
+  versao          Int       @default(1)
+  ativo           Boolean   @default(true)
+  scoreAtual      Float?
+  itensUltimaColeta Int     @default(0)
+  ultimoOkEm      DateTime?
+  ultimoErro      String?   @db.VarChar(300)
+  ciclosZerados   Int       @default(0)
+  proximaExecucaoEm DateTime?
+  atualizadoEm    DateTime  @default(now())
+
+  @@index([ativo])
+  @@index([scoreAtual])
+}
+
+// Série temporal de cada coleta executada pelo núcleo (sem dados pessoais:
+// apenas contagens, latência e o erro técnico truncado).
+model ColetorMetrica {
+  id         BigInt   @id @default(autoincrement())
+  ts         DateTime @default(now())
+  coletorId  String   @db.VarChar(60)
+  http       Int?
+  ms         Int
+  itens      Int
+  ok         Boolean
+  erro       String?  @db.VarChar(300)
+  captcha    Boolean  @default(false)
+  bloqueio   Boolean  @default(false)
+  score      Float
+
+  @@index([coletorId, ts])
+  @@index([ts])
+}
+
+// Trilha do que o auto-aperfeiçoamento fez — com a origem (IA de buscador ou
+// regras determinísticas), a evidência usada e o desfecho medido.
+model ColetorAcao {
+  id           BigInt   @id @default(autoincrement())
+  ts           DateTime @default(now())
+  coletorId    String   @db.VarChar(60)
+  origem       String   @db.VarChar(10) // ia | regras
+  tipo         String   @db.VarChar(40) // ajuste-parametro | reverter | desativar | manter | diagnostico
+  acao         String   @db.VarChar(500)
+  evidencia    String   @db.VarChar(1500)
+  resultado    String   @db.VarChar(20) // aplicada | rejeitada | revertida | mantida | desativada
+  motivo       String   @db.VarChar(500)
+  versaoAntes  Int
+  versaoDepois Int
+  // snapshot dos parâmetros antes/depois da ação — é o que permite rollback real
+  paramsAntes  Json?
+  paramsDepois Json?
+
+  @@index([coletorId, ts])
+  @@index([origem, ts])
+}

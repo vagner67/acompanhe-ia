@@ -236,3 +236,72 @@ Escopo: saúde + retry do webhook e da entrega no motor, **sem** auto-ajuste de 
 5. **F4/F5/F6**.
 
 Cada fase entra com teste, smoke em produção e atualização deste plano — no mesmo padrão da §9/§10 do `docs/plano-91-tribunais-nacional.md`.
+
+---
+
+## 9. Estado da implementação (25/10/2026) — o que está no código, medido
+
+Esta seção é o oposto de promessa: cada item abaixo aponta o arquivo que existe
+e o número que foi medido rodando o ciclo contra a fonte real.
+
+### 9.1 Arquivos entregues
+
+| Arquivo | Papel |
+|---|---|
+| `apps/api/src/nucleo/tipos.ts` | contrato único de coletor (`Coletor`, `ResultadoColeta`, `ParamSpec`, `CtxColeta`, helpers) |
+| `apps/api/src/nucleo/registro.ts` | **12 coletores** reais cobrindo 4 módulos: 4 e-SAJ, DJEN, DataJud, PNCP, DOU, RDAP, crt.sh, Wayback, HIBP |
+| `apps/api/src/nucleo/store.ts` | estado versionado + métricas + trilha de ações (Prisma durável e memória resiliente) |
+| `apps/api/src/nucleo/ia-diagnostico.ts` | IA de buscador interpretando o erro + validação do que ela pode mudar |
+| `apps/api/src/nucleo/otimizador.ts` | ciclo: mede → diagnostica → canário → promove/reverte/desliga |
+| `apps/api/src/nucleo/incidentes.ts` | disjuntor por assinatura de falha (captcha, bloqueio, timeout, contrato, credencial, refino) |
+| `apps/api/src/nucleo/pontuar.ts` | score + histerese ε=3 |
+| `apps/api/src/nucleo/ponte-juridico.ts` | o que o NCA promove no e-SAJ/DJEN chega no perfil que a busca do usuário lê |
+| `apps/api/src/nucleo/syncrun.ts` | escritor do `SyncRun` — a tabela que estava sem escritor |
+| `apps/api/src/jobs/coleta.ts` | coleta contínua de todos os coletores, com concorrência 3 e prazo duro |
+| `apps/api/src/routes/nucleo.ts` | `/v1/admin/nucleo/{catalogo,estado,ciclo,coletor/:id,...}` |
+| `apps/web/src/screens.tsx` | aba **Fontes** no painel de operações (ver, rodar ciclo, reativar) |
+
+### 9.2 P0 corrigido
+
+`jobs/autoaperfeicoamento.ts`: o `DetectorDeriva` agora é criado **uma vez** no
+agendador e passado a cada ciclo. Teste `nucleo.test.ts` roda três ciclos com
+relógio falso e exige o evento `auto.deriva` — antes ele nunca aparecia.
+
+### 9.3 Medições reais do primeiro dia (rede + Postgres de verdade)
+
+| Coletor | Resultado medido | Score |
+|---|---|---|
+| `pncp-contratacoes` | HTTP 200, **50 itens** | 139,4 |
+| `osint-crtsh` | HTTP 200, **81 certificados** | 139,6 |
+| `osint-wayback` | HTTP 200, 1 snapshot | 59,9 |
+| `osint-rdap` | HTTP 200, 1 registro (após UA identificado) | 59,9 |
+| `datajud` | timeout em 15 s → **promovido para 30 s** e passou a responder | 46,5 na v2 |
+| `esaj-sp` | HTTP 200 pedindo termo mais específico → diagnóstico `refinar`, ajuste **rejeitado no canário** (não houve ganho medido) | — |
+| `djen` | HTTP 403 (geo-bloqueio do sandbox) → recuo, sem martelar | — |
+| `dou-busca` | HTTP 502 do in.gov.br → recuo exponencial | — |
+| `osint-hibp` | desativado no 1º ciclo: falta `HIBP_API_KEY` | 0 |
+
+Achados que viraram correção de código neste mesmo dia:
+- `rdap.org` e `crt.sh` devolvem 403/502 para `user-agent` vazio → passamos a enviar UA identificado (ganho de 0 → 82 itens).
+- `HIBP` sem chave era classificado como *timeout* → agora é `credencial`, desliga na primeira falta e diz o motivo.
+- e-SAJ com termo amplo devolvia 200 sem lista e era lido como "contrato quebrado" → agora é `refinar` e a correção proposta é trocar a variante do termo, medida antes de aplicar.
+- ciclo sequencial gastava 190 s em um host lento → concorrência 3 + timeout por coletor: **1,5 s** no mesmo conjunto.
+
+### 9.4 O que a IA de buscador NÃO faz
+
+- Não aplica nada sem canário: toda proposta passa por medição e ε=3.
+- Não mexe em parâmetro fora do `espaco` do coletor — a validação descarta e registra o motivo.
+- Não "resolve" captcha, geo-bloqueio ou contrato quebrado com parâmetro; nesses casos ela só classifica e o disjuntor decide.
+- Sem `AI_PROVIDER`/`AI_API_KEY` (caso do ambiente atual) o diagnóstico é determinístico sobre o histórico medido, e o registro diz `origem: "regras"` — nunca finge ser IA.
+
+### 9.5 Placar
+
+- API: **492 testes ✔ / 1 skip** (45 arquivos) · web: **18 ✔** · `tsc` 0 erros nos dois.
+- Antes desta entrega: 447 / 18. Foram **+45 testes** só no núcleo (`test/nucleo.test.ts`), cobrindo registro, pontuação, regras, validação de IA, canário, rollback, disjuntor, coleta contínua, `SyncRun` e a ponte com o jurídico.
+
+### 9.6 Pendências honestas (F4–F6 ainda abertas)
+
+1. `buscaIA` (busca web) e `sherlock` (OSINT de perfis) ainda não são coletores do NCA.
+2. `anota`, `pagamentos` e `operacao` não têm coletor externo — não há o que medir ainda.
+3. Sem chave de IA no ambiente, a parte "IA de buscador interpretando" roda em modo determinístico; ligar `AI_PROVIDER=tavily` + `AI_API_KEY` ativa o caminho completo sem mudar código.
+4. 91 tribunais → 4 e-SAJ abertos + DataJud + DJEN. Os demais portais exigem captcha/credencial; o núcleo declara isso em vez de simular cobertura.
