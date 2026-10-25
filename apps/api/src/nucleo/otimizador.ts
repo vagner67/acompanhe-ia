@@ -16,7 +16,7 @@
  * "porque a IA disse" entra sem antes ser medida contra o vigente.
  */
 import { diagnosticar, diagnosticarPorRegras, type Diagnostico } from "./ia-diagnostico.js";
-import { avaliarIncidente, podeColetar } from "./incidentes.js";
+import { assinatura, avaliarIncidente, podeColetar } from "./incidentes.js";
 import { EPS, ganhoReal, pontuarColeta } from "./pontuar.js";
 import { estadoInicial, type EstadoColetor, type MetricaColeta, type RegistroAcao, type StoreNucleo } from "./store.js";
 import type { Coletor, CtxColeta, Params, ResultadoColeta } from "./tipos.js";
@@ -314,7 +314,26 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
     agora,
   );
 
-  if (diag.acao === "desativar" || incidente.desativar) {
+  // Desligar uma fonte é irreversível sem humano: a IA pode PROPOR, mas a
+  // proposta precisa de corroboração. Medido em produção: a IA pediu
+  // "desativar" o e-SAJ/SP porque o portal respondeu "muitos processos" (termo
+  // amplo do NOSSO canário) e a fonte ficou OFF por uma única observação, com o
+  // disjuntor dizendo o contrário. Regras agora:
+  //   · assinatura "refinar" (termo do canário) NUNCA desativa;
+  //   · desativa se o disjuntor determinístico já desistiu;
+  //   · ou se a IA insiste E a falha se repete (≥2 ciclos seguidos).
+  const falhasAgora = estado.ciclosZerados + (vigente.r.ok ? 0 : 1);
+  const sigAtual = assinatura(vigente.r);
+  const iaQuerDesativar = diag.acao === "desativar" && sigAtual !== "refinar";
+  const desativarPorIA = iaQuerDesativar && !incidente.desativar && falhasAgora >= 2;
+  const recusaDesativar =
+    iaQuerDesativar && !incidente.desativar && !desativarPorIA
+      ? `IA propôs desativar (${sigAtual}), mas é a 1ª falha desta natureza — desligar exige corroboração (2 ciclos seguidos)`
+      : diag.acao === "desativar" && sigAtual === "refinar"
+        ? "IA propôs desativar, mas o portal pediu termo mais específico: o defeito é do termo do canário, não da fonte"
+        : null;
+
+  if (incidente.desativar || desativarPorIA) {
     const novo = await atualizarEstado({
       ativo: false,
       ciclosZerados: estado.ciclosZerados + (vigente.r.ok ? 0 : 1),
@@ -452,14 +471,14 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
       paramsAntes: estado.params,
       paramsDepois: estado.params,
     });
-  } else if (diag.acao !== "manter" || diag.origem === "ia") {
+  } else if (recusaDesativar || diag.acao !== "manter" || diag.origem === "ia") {
     await registrar({
       origem: diag.origem,
       tipo: "diagnostico",
       acao: `mantido ${JSON.stringify(estado.params)}`,
       evidencia: evidenciaJson(diag, vigente.score, { incidente: incidente.motivo }),
       resultado: "mantida",
-      motivo: diag.descartado ?? diag.causa,
+      motivo: recusaDesativar ?? diag.descartado ?? diag.causa,
       versaoAntes: estado.versao,
       versaoDepois: novo.versao,
       paramsAntes: estado.params,
@@ -475,7 +494,7 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
     score: vigente.score,
     scoreAnterior: estado.scoreAtual,
     versao: novo.versao,
-    motivo: diag.causa,
+    motivo: recusaDesativar ?? diag.causa,
     diagnostico: diag,
     vizinhos,
     resultado: vigente.r,

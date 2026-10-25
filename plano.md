@@ -400,3 +400,17 @@ reaparecia como pendente **toda vez**: `esaj-sp`/`esaj-ce` “revertida” em to
 versão subindo sem parar. Correções: `acoes()` do Prisma devolve em ordem cronológica (contrato
 agora escrito na interface) + teste de contrato contra Postgres real comparando os dois stores
 (`acoes() e metricas() devolvem em ordem cronológica nos DOIS stores`). Placar: **512 ✔ / 1 skip**.
+
+**3ª correção (a mais importante para “autonomia soberana”):** a IA podia **desligar** uma
+fonte sozinha com uma única observação. Medido em produção (`ColetorAcao`, 18:27):
+`esaj-sp → desativada, origem ia`, com a justificativa “consulta demasiado ampla → desativar”,
+enquanto o disjuntor determinístico dizia o contrário (“termo do canário, não da fonte”).
+O e-SAJ/SP ficou OFF tendo coletado 25 itens horas antes. Regra nova no motor:
+
+1. assinatura `refinar` (nosso termo de canário) **nunca** desativa;
+2. desativa se o **disjuntor determinístico** desistiu (falhas por assinatura, backoff explícito);
+3. ou se a **IA insiste** e a falha se repete em **≥ 2 ciclos seguidos** — e a recusa fica
+   registrada com o motivo (`IA propôs desativar (bloqueio), mas é a 1ª falha desta natureza…`).
+
+Testes novos: `IA pedindo desativar por 'termo amplo' NÃO desliga a fonte` e
+`desativar proposto pela IA exige corroboração: 1ª falha mantém, 2ª desliga`. Placar: **514 ✔ / 1 skip**.

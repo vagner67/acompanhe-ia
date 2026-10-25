@@ -535,6 +535,39 @@ describe("Motor: mede, promove com canário, reverte e desliga", () => {
     expect(r.motivo.toLowerCase()).toContain("específico");
   });
 
+  it("IA pedindo desativar por 'termo amplo' NÃO desliga a fonte (o defeito é do canário)", async () => {
+    const store = new InMemoryNucleoStore();
+    await store.salvar({ ...estadoInicial("teste-motor", { timeoutMs: 10_000 }), ciclosZerados: 0 });
+    const coletor = coletorDeTeste({
+      executar: () => ({ ok: false, http: 200, ms: 700, itens: 0, precisaRefinar: true, erro: "pede refino" }),
+    });
+    const r = await cicloColetor(coletor, { store, pausaMs: 0, usarIA: false });
+    expect(r.acao).not.toBe("desativada");
+    expect((await store.obter(coletor.id))!.ativo).toBe(true);
+  });
+
+  it("desativar proposto pela IA exige corroboração: 1ª falha mantém, 2ª desliga", async () => {
+    limparCacheIA();
+    const env = { NUCLEO_IA_ESPACO_MS: "0" };
+    const json = '{"causa":"403 CloudFront: geo-bloqueio do host","confianca":0.9,"acao":"desativar","ajustes":[]}';
+    const fetchImpl = (async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("pollinations")) {
+        return new Response(JSON.stringify({ choices: [{ message: { content: json } }] }), { status: 200 });
+      }
+      return new Response("<html></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+    const store = new InMemoryNucleoStore();
+    const coletor = coletorDeTeste({ executar: () => ({ ok: false, http: 403, ms: 60, itens: 0, erro: "HTTP 403" }) });
+    const r1 = await cicloColetor(coletor, { store, fetchImpl, env, pausaMs: 0, maxVizinhos: 0, forcarIA: true });
+    expect(r1.acao).not.toBe("desativada"); // 1ª falha: não desliga com uma única observação
+    expect(r1.motivo).toMatch(/corroboração/i);
+    await store.salvar({ ...(await store.obter(coletor.id))!, proximaExecucaoEm: null });
+    limparCacheIA();
+    const r2 = await cicloColetor(coletor, { store, fetchImpl, env, pausaMs: 0, maxVizinhos: 0, forcarIA: true, ignorarRecuo: true });
+    expect(r2.acao).toBe("desativada"); // 2º ciclo seguido: a falha é corroborada
+  });
+
   it("captcha repetido desliga o coletor (parar de insistir é a correção honesta)", async () => {
     const store = new InMemoryNucleoStore();
     await store.salvar({ ...estadoInicial("teste-motor", { timeoutMs: 10_000 }), ciclosZerados: 2 });
