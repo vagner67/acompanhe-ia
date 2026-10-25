@@ -136,6 +136,16 @@ export function api(token: string) {
           (filtros?.tribunal ? `&tribunal=${encodeURIComponent(filtros.tribunal)}` : "") +
           (filtros?.ano ? `&ano=${encodeURIComponent(filtros.ano)}` : ""),
       ),
+    processoNacional: (q: string, uf?: string) =>
+      get<BuscaNacionalResp>(
+        `/api/processos/nacional?q=${encodeURIComponent(q)}` + (uf && uf !== "todas" ? `&uf=${encodeURIComponent(uf)}` : ""),
+      ),
+    processoFrota: () =>
+      get<{
+        tribunais: Array<{ alias: string; uf: string | null; familiaPrincipal: string; numero: { ok: boolean }; nome: { ok: boolean }; cpf: { ok: boolean } }>;
+        resumo: { tribunais: number; numero: number; nome: number; cpf: number; ufsAbertas: string[]; djen: boolean };
+        rodape: string;
+      }>("/api/processos/frota"),
     processoRisco: (q: string) => post<AvaliacaoRiscoResp>("/api/processos/risco", { q }),
     juridicoConsulta: (cnj: string, uf: string) => post<{ id: string; consolidado?: boolean }>("/api/juridico/consultas", { cnj, uf }),
     // —— Empréstimos ——
@@ -353,6 +363,27 @@ export interface ResultadoEsaj {
   ultimaPagina: number;
   itens: ProcessoTercero[];
 }
+/** Relatório de UMA fonte na busca nacional (plano-91-tribunais-nacional §4.2). */
+export interface FonteNacionalDto {
+  fonte: string;
+  tipo: "indice" | "esaj" | "djen" | string;
+  estado: "ok" | "vazio" | "bloqueado" | "captcha" | "geo_bloqueado" | "timeout" | "erro" | "pulado" | "deriva";
+  itens: number;
+  ms: number;
+  motivo?: string;
+}
+
+export interface BuscaNacionalResp {
+  tipo: "nome" | "cpf" | "cnpj" | "cnj";
+  termo: string;
+  itens: ProcessoTercero[];
+  fontes: FonteNacionalDto[];
+  aviso: string | null;
+  rodape: string;
+  cobertura: { tribunais: number; numero: number; nome: number; cpf: number; ufsAbertas: string[]; djen: boolean };
+  msTotal: number;
+}
+
 export interface PesquisaTerceiros {
   tipo: "nome" | "cpf" | "cnpj";
   formato?: string;

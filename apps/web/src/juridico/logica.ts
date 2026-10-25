@@ -195,3 +195,69 @@ export const EXEMPLOS: Array<{ rotulo: string; valor: string }> = [
   { rotulo: "CPF", valor: "529.982.247-25" },
   { rotulo: "nome", valor: "Maria da Silva" },
 ];
+
+/** ── Busca nacional (91 tribunais) ──────────────────────────────────────── */
+
+/** Texto honesto para cada estado de fonte: nada de "erro" genérico sem motivo. */
+export const TEXTO_ESTADO_NACIONAL: Record<string, string> = {
+  ok: "respondeu",
+  vazio: "respondeu, nenhum resultado",
+  bloqueado: "bloqueou a consulta (rate limit)",
+  captcha: "exige captcha — não burlamos",
+  geo_bloqueado: "bloqueado fora do Brasil",
+  timeout: "não respondeu no prazo",
+  erro: "falhou",
+  pulado: "não configurada",
+  deriva: "parou de devolver o esperado",
+};
+
+export interface FonteNacionalLike {
+  fonte: string;
+  tipo?: string;
+  estado: string;
+  itens: number;
+  ms?: number;
+  motivo?: string;
+}
+
+export interface LinhaFonte {
+  fonte: string;
+  rotulo: string;
+  estado: string;
+  texto: string;
+  itens: number;
+  ms: number;
+  tom: "ok" | "parcial" | "ruim";
+}
+
+/** Normaliza o relatório de fontes para exibição direta (sem colapsar nada). */
+export function relatorioFontes(fontes: FonteNacionalLike[] | null | undefined): LinhaFonte[] {
+  return (fontes ?? []).map((f) => {
+    const texto = TEXTO_ESTADO_NACIONAL[f.estado] ?? f.estado;
+    const tom: LinhaFonte["tom"] =
+      f.estado === "ok" ? "ok" : f.estado === "vazio" || f.estado === "pulado" ? "parcial" : "ruim";
+    return {
+      fonte: f.fonte,
+      rotulo: f.fonte.startsWith("esaj-") ? `e-SAJ ${f.fonte.slice(5).toUpperCase()}` : f.fonte.toUpperCase(),
+      estado: f.estado,
+      texto: f.motivo ? `${texto} — ${f.motivo}` : texto,
+      itens: f.itens,
+      ms: f.ms ?? 0,
+      tom,
+    };
+  });
+}
+
+/** Quantas fontes responderam de fato (ok ou vazio) e quantas falharam. */
+export function resumoFontesNacional(fontes: FonteNacionalLike[] | null | undefined): { responderam: number; falharam: number; total: number } {
+  const lista = fontes ?? [];
+  const responderam = lista.filter((f) => f.estado === "ok" || f.estado === "vazio").length;
+  return { responderam, falharam: lista.length - responderam, total: lista.length };
+}
+
+/** Linha de cobertura mostrada ANTES da busca: o que os 91 tribunais permitem. */
+export function linhaCobertura(c: { tribunais: number; numero: number; nome: number; cpf: number; djen: boolean } | null | undefined): string {
+  if (!c) return "91 tribunais · número em todos";
+  const porNome = c.djen ? "nome/CPF em todos via DJEN" : `nome/CPF em ${c.nome} (e-SAJ aberto)`;
+  return `${c.numero}/${c.tribunais} por número · ${porNome}`;
+}

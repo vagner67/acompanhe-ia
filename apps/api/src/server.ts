@@ -76,6 +76,10 @@ export interface AppDeps {
     datajudOpts?: import("./juridico/datajud.js").DatajudClientOpts;
     indice?: import("./juridico/indice.js").IndiceStore;
     serviceToken?: () => string | null;
+    /** Busca nacional orquestrada (injetável em teste). */
+    nacional?: typeof import("./juridico/nacional.js").consultarNacional;
+    /** Perfis do auto-aperfeiçoamento (memória ou Postgres). */
+    perfis?: import("./juridico/autoaperfeicoamento.js").PerfilStore;
   };
   admin?: { store?: AdminStore };
   minhas?: { store?: MinhasStore; ocr?: import("./minhas/service.js").OcrProvider };
@@ -289,6 +293,8 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
       ...(deps.juridico?.datajudOpts ? { datajudOpts: deps.juridico.datajudOpts } : {}),
       indice: indiceStore,
       ...(deps.juridico?.serviceToken ? { serviceToken: deps.juridico.serviceToken } : {}),
+      ...(deps.juridico?.nacional ? { nacional: deps.juridico.nacional } : {}),
+      ...(deps.juridico?.perfis ? { perfis: deps.juridico.perfis } : {}),
     }),
   );
   // Empréstimo (plano.md §5) — mesma porta. RE1: nenhuma rota move dinheiro.
@@ -459,6 +465,30 @@ async function main() {
     pushinpay: new PushinpayClient(config.PUSHINPAY_API_BASE, config.PUSHINPAY_TOKEN),
   });
   await app.listen({ port: config.PORT, host: config.HOST });
+
+  // Auto-aperfeiçoamento das fontes (plano-91-tribunais-nacional §5).
+  // Ciclo medido a cada AUTO_HORAS (default 6h); desligável com AUTO_HABILITADO=0.
+  // Falha de fonte não derruba o processo: o job registra e tenta no próximo ciclo.
+  if ((process.env.AUTO_HABILITADO ?? "1") !== "0") {
+    const { iniciarAutoAperfeicoamento } = await import("./jobs/autoaperfeicoamento.js");
+    const { InMemoryPerfilStore } = await import("./juridico/autoaperfeicoamento.js");
+    iniciarAutoAperfeicoamento({
+      store: new InMemoryPerfilStore(),
+      onResultado: (r) => {
+        app.log.info(
+          {
+            ok: r.ok,
+            fontes: r.metricas.length,
+            promovidas: r.promovidas,
+            derivas: r.derivas,
+            nuncaFuncionaram: r.nuncaFuncionaram,
+            ms: r.msTotal,
+          },
+          "auto-aperfeicoamento: ciclo concluído",
+        );
+      },
+    });
+  }
 }
 
 // sobe só quando executado diretamente (testes importam buildApp)

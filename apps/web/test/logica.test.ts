@@ -8,6 +8,9 @@ import {
   faixaCriticidade,
   resumoCobertura,
   unificarResultados,
+  linhaCobertura,
+  relatorioFontes,
+  resumoFontesNacional,
 } from "../src/juridico/logica";
 
 /**
@@ -173,5 +176,48 @@ describe("resumoCobertura / contarPorFonte / faixaCriticidade", () => {
     expect(encurtar("abc", 10)).toBe("abc");
     expect(encurtar("a".repeat(30), 10)).toHaveLength(10);
     expect(encurtar("a".repeat(30), 10).endsWith("…")).toBe(true);
+  });
+});
+
+// ── Busca nacional: relatório de fontes honesto e linha de cobertura ──
+describe("busca nacional — relatório de fontes", () => {
+  it("traduz cada estado para texto humano (inclusive os ruins)", () => {
+    const linhas = relatorioFontes([
+      { fonte: "esaj-sp", estado: "ok", itens: 3, ms: 900 },
+      { fonte: "djen", estado: "geo_bloqueado", itens: 0, motivo: "403 CloudFront" },
+      { fonte: "esaj-ce", estado: "timeout", itens: 0 },
+      { fonte: "indice", estado: "vazio", itens: 0 },
+    ]);
+    expect(linhas.map((l) => l.rotulo)).toEqual(["e-SAJ SP", "DJEN", "e-SAJ CE", "INDICE"]);
+    expect(linhas[0]!.texto).toBe("respondeu");
+    expect(linhas[1]!.texto).toContain("bloqueado fora do Brasil");
+    expect(linhas[1]!.texto).toContain("403 CloudFront");
+    expect(linhas[2]!.tom).toBe("ruim");
+    expect(linhas[3]!.tom).toBe("parcial");
+  });
+
+  it("estado desconhecido não vira 'ok' nem some", () => {
+    const [l] = relatorioFontes([{ fonte: "x", estado: "novo-estado", itens: 0 }]);
+    expect(l!.texto).toBe("novo-estado");
+    expect(l!.tom).toBe("ruim");
+  });
+
+  it("resumo separa quem respondeu de quem falhou", () => {
+    const r = resumoFontesNacional([
+      { fonte: "a", estado: "ok", itens: 2 },
+      { fonte: "b", estado: "vazio", itens: 0 },
+      { fonte: "c", estado: "timeout", itens: 0 },
+      { fonte: "d", estado: "pulado", itens: 0 },
+    ]);
+    expect(r).toEqual({ responderam: 2, falharam: 2, total: 4 });
+    expect(resumoFontesNacional(null)).toEqual({ responderam: 0, falharam: 0, total: 0 });
+  });
+
+  it("linha de cobertura diz a verdade sobre o DJEN", () => {
+    expect(linhaCobertura({ tribunais: 91, numero: 91, nome: 4, cpf: 4, djen: false })).toBe(
+      "91/91 por número · nome/CPF em 4 (e-SAJ aberto)",
+    );
+    expect(linhaCobertura({ tribunais: 91, numero: 91, nome: 4, cpf: 4, djen: true })).toContain("todos via DJEN");
+    expect(linhaCobertura(null)).toContain("91 tribunais");
   });
 });

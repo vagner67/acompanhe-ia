@@ -20,6 +20,14 @@ import { INGEST_LOTE } from "../juridico/limites.js";
 import { readServiceToken } from "../service-token.js";
 import { avaliarRisco } from "../juridico/risco.js";
 import { cobertura, FONTES_INFO } from "../juridico/fontes.js";
+import { consultarNacional, type ItemNacional } from "../juridico/nacional.js";
+import { matrizCobertura, resumoFrota, RODAPE_FROTA } from "../juridico/frota.js";
+import { medirFontes } from "../juridico/probe.js";
+import { rodarCicloAuto } from "../jobs/autoaperfeicoamento.js";
+import {
+  decidir, DetectorDeriva, InMemoryPerfilStore, perfilVigente, pontuar,
+  type Metrica, type PerfilFonte, type PerfilStore,
+} from "../juridico/autoaperfeicoamento.js";
 import { ranquear, type IndiceStore } from "../juridico/indice.js";
 import type { JwtService } from "../security/jwt.js";
 import type { Entitlements } from "../entitlements.js";
@@ -42,6 +50,12 @@ export interface ProcessosDeps {
   /** Token de serviço para rotas de ingestão em lote (job/ops). */
   serviceToken?: () => string | null;
   now?: () => Date;
+  /** Busca nacional orquestrada (injetável em teste). */
+  nacional?: typeof consultarNacional;
+  /** Perfis do auto-aperfeiçoamento (memória ou Postgres). */
+  perfis?: PerfilStore;
+  /** Probe HTTP real das fontes (injetável em teste). */
+  probeFonte?: (fonteId: string, termo: string) => Promise<Metrica>;
 }
 
 const perguntaSchema = z.object({ question: z.string().min(3).max(500) });
@@ -68,6 +82,17 @@ function cnjCanonico(bruto: string): string | null {
   const canonico = formatarNumero(decoded) ?? decoded;
   return isValidCnj(canonico) ? formatCnj(parseCnj(canonico)!) : null;
 }
+
+
+/** Store de perfis em memória (processo) — o worker pode injetar o Prisma. */
+let perfisMemoria: PerfilStore | null = null;
+function perfisPadrao(): PerfilStore {
+  perfisMemoria ??= new InMemoryPerfilStore();
+  return perfisMemoria;
+}
+
+/** Detector de deriva por processo (histórico de canários). */
+const detectorDeriva = new DetectorDeriva();
 
 export function processosRoutes(deps: ProcessosDeps) {
   return async function routes(app: FastifyInstance): Promise<void> {
@@ -278,6 +303,131 @@ export function processosRoutes(deps: ProcessosDeps) {
         ...(deps.datajudOpts?.fetchImpl ? { fetchImpl: deps.datajudOpts.fetchImpl } : {}),
       });
       return reply.send({ ...r, rodape: RODAPE_INFORMATIVO });
+    });
+
+
+    // ═══════════ Consulta NACIONAL + frota + auto-aperfeiçoamento ═══════════
+    // plano-91-tribunais-nacional.md §6
+
+    /** Matriz REAL de cobertura: 91 tribunais × {número, nome, CPF}. */
+    app.get("/api/processos/frota", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      const matriz = matrizCobertura();
+      return reply.send({ tribunais: matriz, resumo: resumoFrota(matriz), rodape: RODAPE_FROTA });
+    });
+
+    /**
+     * Busca nacional: índice próprio + e-SAJ (UFs abertas) + DJEN (se houver egress BR).
+     * Nunca esconde fonte que falhou: devolve o relatório por fonte.
+     */
+    app.get("/api/processos/nacional", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      const q = z
+        .object({
+          q: z.string().min(3).max(120),
+          uf: z.string().min(2).max(5).optional(),
+          limite: z.coerce.number().int().min(1).max(200).optional(),
+        })
+        .parse(req.query ?? {});
+
+      const consultar = deps.nacional ?? consultarNacional;
+      const indice = deps.indice;
+      const r = await consultar(q.q, {
+        ...(q.uf ? { uf: q.uf } : {}),
+        ...(q.limite ? { limite: q.limite } : {}),
+        ...(deps.datajudOpts ? { djenOpts: {} } : {}),
+        // índice próprio entra como fonte injetada (mesmo store da rota /indice)
+        indice: async (termo: string): Promise<ItemNacional[]> => {
+          if (!indice) return [];
+          const det = detectarConsulta(termo);
+          const busca =
+            det.tipo === "cnj"
+              ? { numero: formatarNumero(det.valor) ?? det.valor }
+              : det.tipo === "cpf" || det.tipo === "cnpj"
+                ? { documento: det.valor }
+                : { nome: termo };
+          const achados = await indice.buscar({ ...busca, limite: 60 });
+          return achados.map((p) => ({
+            numeroProcesso: p.numeroCnj,
+            tribunal: p.tribunal,
+            uf: p.uf,
+            partes: [],
+            classe: p.classe,
+            orgao: p.orgaoJulgador,
+            ultimoMovimento: p.ultimoMovimentoNome ?? null,
+            dataMovimento: p.ultimoMovimentoData ?? null,
+            dataPublicacao: null,
+            link: null,
+            fontes: ["indice"],
+            score: 0.6,
+            motivoVinculo: "processo já indexado",
+          }));
+        },
+      });
+      return reply.send({ ...r, rule: "consulta nacional orquestrada" });
+    });
+
+    /** Probe HTTP real das fontes → grava métrica (job/ops, não usuário). */
+    app.post("/api/processos/frota/probe", async (req: FastifyRequest, reply: FastifyReply) => {
+      const esperado = deps.serviceToken?.() ?? readServiceToken();
+      const recebido = (req.headers["x-service-token"] as string | undefined) ?? "";
+      if (!esperado || recebido !== esperado) return reply.code(401).send({ error: "token de serviço inválido" });
+      const body = z
+        .object({ termo: z.string().min(3).max(120).optional(), fontes: z.array(z.string()).max(20).optional() })
+        .parse(req.body ?? {});
+      const termo = body.termo ?? "João Carlos";
+      const fontes = body.fontes ?? ["djen", "esaj-sp", "esaj-al", "esaj-ac", "esaj-ce"];
+      const agora = (deps.now ?? (() => new Date()))().toISOString();
+      const metrica = await medirFontes(fontes, termo, agora);
+      const store = deps.perfis ?? perfisPadrao();
+      for (const m of metrica) {
+        const perfil = await perfilVigente(store, m.fonteId);
+        const decisao = await decidir(perfil, m, async () => m);
+        if (decisao.acao !== "manter") await store.salvar(decisao.perfil, decisao);
+      }
+      return reply.send({ ok: true, termo, medidoEm: agora, metricas: metrica });
+    });
+
+    /** Estado do auto-aperfeiçoamento: perfil vigente, histórico e pontuação. */
+    app.get("/api/processos/auto", async (req: FastifyRequest, reply: FastifyReply) => {
+      const esperado = deps.serviceToken?.() ?? readServiceToken();
+      const recebido = (req.headers["x-service-token"] as string | undefined) ?? "";
+      if (!esperado || recebido !== esperado) return reply.code(401).send({ error: "token de serviço inválido" });
+      const store = deps.perfis ?? perfisPadrao();
+      const ids = ["djen", "esaj-sp", "esaj-al", "esaj-ac", "esaj-ce"];
+      const perfis = await Promise.all(
+        ids.map(async (id) => {
+          const vigente = await perfilVigente(store, id);
+          const historico = await store.historico(id);
+          return { fonteId: id, vigente, versoes: historico.length, historico: historico.slice(-5) };
+        }),
+      );
+      return reply.send({ perfis, regras: { epsilon: 3, driftCiclos: 2, limites: "timeout 1–30s · páginas 1–10 · concorrência 1–4" } });
+    });
+
+    /** Roda um ciclo completo agora (canários reais + decisão + gravação). */
+    app.post("/api/processos/auto/ciclo", async (req: FastifyRequest, reply: FastifyReply) => {
+      const esperado = deps.serviceToken?.() ?? readServiceToken();
+      const recebido = (req.headers["x-service-token"] as string | undefined) ?? "";
+      if (!esperado || recebido !== esperado) return reply.code(401).send({ error: "token de serviço inválido" });
+      const body = z.object({ termo: z.string().min(3).max(120).optional() }).parse(req.body ?? {});
+      const termo = body.termo ?? "João Carlos";
+      const agora = (deps.now ?? (() => new Date()))().toISOString();
+      const store = deps.perfis ?? perfisPadrao();
+
+      const r = await rodarCicloAuto({
+        store,
+        termo,
+        agora: new Date(agora),
+        detector: detectorDeriva,
+        registrarEvento: (e) => app.log.warn(e, "auto-aperfeiçoamento"),
+      });
+      return reply.send({ ...r, termo });
     });
 
     // ── Catálogo de fontes: cobertura REAL exibida na tela (padrão P7) ──

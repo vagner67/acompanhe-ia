@@ -19,6 +19,7 @@ import {
   type MeuProcesso,
   type ProcessoTercero,
   type ResultadoEsaj,
+  type FonteNacionalDto,
 } from "../api2";
 import { Chip, ScoreBadge, Sheet, SkeletonLista, Vazio } from "./ui";
 import {
@@ -28,6 +29,8 @@ import {
   encurtar,
   EXEMPLOS,
   faixaCriticidade,
+  linhaCobertura,
+  relatorioFontes,
   resumoCobertura,
   ROTULO_TIPO,
   TEXTO_ESTADO_FONTE,
@@ -69,6 +72,9 @@ export function JuridicoScreen({ a, toast }: Props) {
   const [indice, setIndice] = useState<BuscaIndiceResp | null>(null);
   const [terceiros, setTerceiros] = useState<ProcessoTercero[]>([]);
   const [fontes, setFontes] = useState<ResultadoEsaj[]>([]);
+  // relatório da busca nacional (91 tribunais) — exibido sem esconder falha
+  const [fontesNac, setFontesNac] = useState<FonteNacionalDto[]>([]);
+  const [frota, setFrota] = useState<{ tribunais: number; numero: number; nome: number; cpf: number; djen: boolean } | null>(null);
   const [detalhes, setDetalhes] = useState<Record<string, DetalheTercero>>({});
   const [rodapeBusca, setRodapeBusca] = useState("");
   const [aviso, setAviso] = useState("");
@@ -173,6 +179,21 @@ export function JuridicoScreen({ a, toast }: Props) {
     try {
       // índice próprio + fontes ao vivo em paralelo; o índice pode não estar
       // liberado no plano — nesse caso seguimos só com as fontes públicas.
+      // Busca nacional (91 tribunais): índice + e-SAJ abertos + DJEN, com relatório
+      // de fontes. Se o plano não liberar a rota, seguimos com o fluxo anterior —
+      // nunca escondemos do usuário qual caminho respondeu.
+      const nac = await a.processoNacional(texto, uf).catch(() => null);
+      if (nac) {
+        setTerceiros(nac.itens as unknown as ProcessoTercero[]);
+        setFontesNac(nac.fontes);
+        setRodapeBusca(nac.rodape);
+        setAviso(nac.aviso ?? "");
+        setFrota(nac.cobertura);
+        const idx2 = await a.processoBuscarIndice(texto, uf === "todas" ? {} : { uf }).catch(() => null);
+        if (idx2) setIndice(idx2);
+        setFase("resultados");
+        return;
+      }
       const [pesq, idx] = await Promise.allSettled([
         a.processoPesquisar(texto, uf, 1),
         a.processoBuscarIndice(texto, uf === "todas" ? {} : { uf }),
@@ -374,6 +395,7 @@ export function JuridicoScreen({ a, toast }: Props) {
                   setCaso(null);
                   setIndice(null);
                   setTerceiros([]);
+                  setFontesNac([]);
                 }}
                 aria-label="limpar busca"
                 title="limpar"
@@ -498,7 +520,9 @@ export function JuridicoScreen({ a, toast }: Props) {
           <div className="jur-foot">
             <span className="tiny">
               {lista.length} processo(s){profunda ? " · pesquisa profunda" : ""} ·{" "}
-              {contagens.filter((c) => c.estado === "resultados").map((c) => `${c.fonte.toUpperCase()}`).join(", ") || "fontes verificadas"}
+              {fontesNac.filter((f) => f.estado === "ok" && f.itens > 0).map((f) => f.fonte.replace("esaj-", "e-SAJ ").toUpperCase()).join(", ") ||
+                contagens.filter((c) => c.estado === "resultados").map((c) => c.fonte.toUpperCase()).join(", ") ||
+                "fontes verificadas"}
             </span>
             {(contagens.length > 0 || aviso) && (
               <button className="link" onClick={() => setSheet("fontes")}>
@@ -690,7 +714,7 @@ export function JuridicoScreen({ a, toast }: Props) {
       {/* ─────────── shet: uma linha de rodapé, sempre acessível ─────────── */}
       {fase === "buscar" && (
         <button className="jur-cobertura" onClick={() => setSheet("como")}>
-          {resumoCobertura(catalogo)} <span aria-hidden="true">›</span>
+          {frota ? linhaCobertura(frota) : resumoCobertura(catalogo)} <span aria-hidden="true">›</span>
         </button>
       )}
 
@@ -747,6 +771,18 @@ export function JuridicoScreen({ a, toast }: Props) {
               <span className="tag green">{indice.itens.length} nesta busca</span>
             </div>
           )}
+          {relatorioFontes(fontesNac).map((f) => (
+            <div key={`nac-${f.fonte}`} className="sheet-item">
+              <div>
+                <div style={{ fontSize: "0.88rem" }}>{f.rotulo}</div>
+                <div className="tiny">
+                  {f.texto}
+                  {f.ms ? ` · ${f.ms} ms` : ""}
+                </div>
+              </div>
+              <span className={`tag ${f.tom === "ok" ? "green" : f.tom === "ruim" ? "warn" : ""}`}>{f.itens} nesta busca</span>
+            </div>
+          ))}
           {contagens.map((c) => (
             <div key={c.fonte} className="sheet-item">
               <div>
@@ -756,7 +792,9 @@ export function JuridicoScreen({ a, toast }: Props) {
               <span className="tag">{c.itens} nesta página</span>
             </div>
           ))}
-          {contagens.length === 0 && !indice && <p className="mut">Nenhuma fonte foi consultada ainda.</p>}
+          {contagens.length === 0 && fontesNac.length === 0 && !indice && (
+            <p className="mut">Nenhuma fonte foi consultada ainda.</p>
+          )}
         </div>
         {(aviso || rodapeBusca) && (
           <div className="sheet-nota">
