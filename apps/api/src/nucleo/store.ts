@@ -58,7 +58,14 @@ export interface StoreNucleo {
   salvar(estado: EstadoColetor): Promise<void>;
   registrarMetrica(m: MetricaColeta): Promise<void>;
   registrarAcao(a: RegistroAcao): Promise<void>;
+  /** série medida — SEMPRE da mais antiga para a mais recente (contrato) */
   metricas(coletorId: string, limite?: number): Promise<MetricaColeta[]>;
+  /**
+   * ações registradas — SEMPRE da mais antiga para a mais recente (contrato).
+   * A ordem é parte do contrato porque o motor lê o histórico de trás para
+   * frente para achar a última decisão: as duas implementações discordavam
+   * (memória: asc; Prisma: desc) e o rollback nunca fechava.
+   */
   acoes(coletorId: string, limite?: number): Promise<RegistroAcao[]>;
   estados(): Promise<EstadoColetor[]>;
 }
@@ -222,7 +229,7 @@ export class PrismaNucleoStore implements StoreNucleo {
         bloqueio: r.bloqueio,
         score: r.score,
       }))
-      .reverse();
+      .reverse(); // desc + take = as N mais recentes; devolve em ordem cronológica
   }
 
   async acoes(coletorId: string, limite = 50): Promise<RegistroAcao[]> {
@@ -231,7 +238,8 @@ export class PrismaNucleoStore implements StoreNucleo {
       orderBy: { ts: "desc" },
       take: limite,
     });
-    return rows.map((r) => ({
+    // desc + take = as N mais recentes; o contrato devolve em ordem cronológica
+    return rows.reverse().map((r) => ({
       coletorId: r.coletorId,
       ts: r.ts.toISOString(),
       origem: r.origem === "ia" ? "ia" : "regras",

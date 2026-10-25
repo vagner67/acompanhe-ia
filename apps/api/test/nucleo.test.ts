@@ -18,7 +18,8 @@ import {
   validarAjustes,
 } from "../src/nucleo/ia-diagnostico.js";
 import { cicloColetor, gerarVizinhos } from "../src/nucleo/otimizador.js";
-import { InMemoryNucleoStore, estadoInicial } from "../src/nucleo/store.js";
+import { InMemoryNucleoStore, PrismaNucleoStore, estadoInicial } from "../src/nucleo/store.js";
+import { createDb } from "@acompanhe/db";
 import { avaliarIncidente, assinatura, podeColetar } from "../src/nucleo/incidentes.js";
 import { rodarCicloNucleo } from "../src/jobs/coleta.js";
 import type { Coletor, Params, ResultadoColeta } from "../src/nucleo/tipos.js";
@@ -902,5 +903,61 @@ describe("Cobertura de ponta a ponta: módulos do Investiga e busca do chat", ()
     // achou perfil no Gravatar → 1 item; se o MX falhar no ambiente, ainda é resultado válido
     expect(r.itens).toBeGreaterThanOrEqual(0);
     expect(r.erro).toBeUndefined();
+  });
+});
+
+describe("Contrato dos stores do núcleo (memória × Prisma, mesma ordem)", () => {
+  const URL = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:5432/acompanhe";
+  const dbAlive = (() => {
+    const db = createDb(URL);
+    return db
+      .$queryRaw`select 1`.then(async () => {
+        await db.$disconnect();
+        return true;
+      })
+      .catch(async () => {
+        await db.$disconnect().catch(() => {});
+        return false;
+      });
+  })();
+  // o Prisma lê `orderBy desc` e precisa devolver cronológico; a memória já devolve.
+  it("acoes() e metricas() devolvem em ordem cronológica nos DOIS stores", async () => {
+    const alive = await dbAlive;
+    if (!alive) return; // sem Postgres: nada a comparar, e nada é simulado
+    const db = createDb(URL);
+    const id = `contrato_${Date.now() % 1_000_000}`;
+    const mem = new InMemoryNucleoStore();
+    const prisma = new PrismaNucleoStore(db);
+    try {
+      for (const s of [mem, prisma] as const) {
+        for (let i = 0; i < 3; i++) {
+          const ts = new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString();
+          await s.registrarAcao({
+            coletorId: id,
+            ts,
+            origem: "regras",
+            tipo: "ajuste",
+            acao: `a${i}`,
+            evidencia: "{}",
+            resultado: "aplicada",
+            motivo: `m${i}`,
+            versaoAntes: i,
+            versaoDepois: i + 1,
+            paramsAntes: { timeoutMs: 10_000 + i },
+          });
+          await s.registrarMetrica({ coletorId: id, ts, http: 200, ms: 100 + i, itens: i, ok: true, captcha: false, bloqueio: false, score: i });
+        }
+      }
+      const a1 = (await mem.acoes(id)).map((a) => a.acao);
+      const a2 = (await prisma.acoes(id)).map((a) => a.acao);
+      expect(a1).toEqual(["a0", "a1", "a2"]);
+      expect(a2).toEqual(a1);
+      expect((await prisma.metricas(id)).map((m) => m.itens)).toEqual([0, 1, 2]);
+      expect((await mem.metricas(id)).map((m) => m.itens)).toEqual([0, 1, 2]);
+    } finally {
+      await db.coletorAcao.deleteMany({ where: { coletorId: id } }).catch(() => {});
+      await db.coletorMetrica.deleteMany({ where: { coletorId: id } }).catch(() => {});
+      await db.$disconnect();
+    }
   });
 });

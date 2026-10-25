@@ -391,3 +391,12 @@ Causa: o rollback procurava a última ação `aplicada` do histórico — e a pr
 lá para sempre, então cada ciclo “descobria” um rollback pendente que já tinha sido feito.
 Agora só há rollback quando a decisão mais recente (`aplicada` ou `revertida`) é uma promoção
 ainda não desfeita. Teste: `rollback roda UMA vez`. Placar: **511 ✔ / 1 skip**.
+
+**Raiz do bug do rollback (2ª correção, encontrada no ciclo em produção):** o `StoreNucleo`
+não documentava a **ordem** do histórico, e as duas implementações discordavam —
+`InMemoryNucleoStore.acoes()` devolvia cronológico, `PrismaNucleoStore.acoes()` devolvia
+`orderBy desc`. O motor lia de trás para frente, então em produção (Prisma) a promoção antiga
+reaparecia como pendente **toda vez**: `esaj-sp`/`esaj-ce` “revertida” em todos os ciclos e a
+versão subindo sem parar. Correções: `acoes()` do Prisma devolve em ordem cronológica (contrato
+agora escrito na interface) + teste de contrato contra Postgres real comparando os dois stores
+(`acoes() e metricas() devolvem em ordem cronológica nos DOIS stores`). Placar: **512 ✔ / 1 skip**.
