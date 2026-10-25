@@ -367,7 +367,17 @@ export interface ResultadoEsaj {
 export interface FonteNacionalDto {
   fonte: string;
   tipo: "indice" | "esaj" | "djen" | string;
-  estado: "ok" | "vazio" | "bloqueado" | "captcha" | "geo_bloqueado" | "timeout" | "erro" | "pulado" | "deriva";
+  estado:
+    | "ok"
+    | "vazio"
+    | "refinar"
+    | "bloqueado"
+    | "captcha"
+    | "geo_bloqueado"
+    | "timeout"
+    | "erro"
+    | "pulado"
+    | "deriva";
   itens: number;
   ms: number;
   motivo?: string;

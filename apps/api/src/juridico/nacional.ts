@@ -18,7 +18,17 @@ import { agruparDjenPorProcesso, buscarDjen, janelaPadrao, type DjenOpts, type E
 import { UFS_ESAJ_ABERTAS, djenHabilitado, RODAPE_FROTA, type ResumoFrota, resumoFrota } from "./frota.js";
 import { detectarConsulta } from "./deteccao.js";
 
-export type EstadoFonteNacional = "ok" | "vazio" | "bloqueado" | "captcha" | "geo_bloqueado" | "timeout" | "erro" | "pulado" | "deriva";
+export type EstadoFonteNacional =
+  | "ok"
+  | "vazio"
+  | "refinar" // fonte respondeu "muitos processos, refine a busca" (e-SAJ SP com nome curto)
+  | "bloqueado"
+  | "captcha"
+  | "geo_bloqueado"
+  | "timeout"
+  | "erro"
+  | "pulado"
+  | "deriva";
 
 export interface FonteRelatorio {
   fonte: string;
@@ -184,15 +194,25 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
           return { uf, fonte: `esaj-${uf}`, estado: "timeout" as EstadoFonteNacional, itens: 0, ms: Date.now() - inicio, motivo: r.motivo };
         }
         const res = r.valor;
+        // "multiplos" SEM itens não é sucesso: o e-SAJ respondeu "foram encontrados
+        // muitos processos, refine sua busca" (medido em SP com nome curto).
+        // Declarar isso evita que o usuário leia a tela como "não existe processo".
         const estado: EstadoFonteNacional =
-          res.estado === "resultados" || res.estado === "multiplos"
-            ? "ok"
+          res.estado === "multiplos" && res.itens.length === 0
+            ? "refinar"
+            : res.estado === "resultados" || res.estado === "multiplos"
+              ? "ok"
             : res.estado === "bloqueado"
               ? "bloqueado"
               : res.estado === "vazio"
                 ? "vazio"
                 : "erro";
-        const motivo = res.estado === "erro" ? `portal respondeu com erro após ${tentativas} tentativa(s)` : undefined;
+        const motivo =
+          res.estado === "erro"
+            ? `portal respondeu com erro após ${tentativas} tentativa(s)`
+            : estado === "refinar"
+              ? "muitos processos com esse termo — refine (nome completo, CPF ou nº)"
+              : undefined;
         return { uf, fonte: `esaj-${uf}`, estado, itens: res.itens.length, ms: Date.now() - inicio, res, ...(motivo ? { motivo } : {}) };
       }),
     );
@@ -278,6 +298,8 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
 
   // aviso honesto quando nada veio e alguma fonte está bloqueada
   const bloqueadas = fontes.filter((f) => f.estado === "geo_bloqueado" || f.estado === "bloqueado" || f.estado === "captcha");
+  const rotulo = (fonte: string) => (fonte.startsWith("esaj-") ? `e-SAJ ${fonte.slice(5).toUpperCase()}` : fonte.toUpperCase());
+  const paraRefinar = fontes.filter((f) => f.estado === "refinar").map((f) => rotulo(f.fonte));
   const aviso =
     lista.length > 0
       ? bloqueadas.length
@@ -285,7 +307,9 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
         : null
       : bloqueadas.length
         ? `Nenhuma fonte de nome respondeu: ${bloqueadas.map((b) => `${b.fonte} (${b.motivo ?? b.estado})`).join("; ")}.`
-        : "Nenhum processo público encontrado nas fontes consultadas.";
+        : paraRefinar.length
+          ? `Nenhum processo veio, mas ${paraRefinar.join(", ")} ${paraRefinar.length > 1 ? "responderam" : "respondeu"} "muitos processos" — refine a busca (nome completo, CPF ou nº do processo).`
+          : "Nenhum processo público encontrado nas fontes consultadas.";
 
   return {
     tipo,

@@ -187,13 +187,16 @@ describe("busca nacional — relatório de fontes", () => {
       { fonte: "djen", estado: "geo_bloqueado", itens: 0, motivo: "403 CloudFront" },
       { fonte: "esaj-ce", estado: "timeout", itens: 0 },
       { fonte: "indice", estado: "vazio", itens: 0 },
+      { fonte: "esaj-sp", estado: "refinar", itens: 0 },
     ]);
-    expect(linhas.map((l) => l.rotulo)).toEqual(["e-SAJ SP", "DJEN", "e-SAJ CE", "INDICE"]);
+    expect(linhas.map((l) => l.rotulo)).toEqual(["e-SAJ SP", "DJEN", "e-SAJ CE", "INDICE", "e-SAJ SP"]);
     expect(linhas[0]!.texto).toBe("respondeu");
     expect(linhas[1]!.texto).toContain("bloqueado fora do Brasil");
     expect(linhas[1]!.texto).toContain("403 CloudFront");
     expect(linhas[2]!.tom).toBe("ruim");
     expect(linhas[3]!.tom).toBe("parcial");
+    expect(linhas[4]!.texto).toContain("refine a busca");
+    expect(linhas[4]!.tom).toBe("parcial");
   });
 
   it("estado desconhecido não vira 'ok' nem some", () => {

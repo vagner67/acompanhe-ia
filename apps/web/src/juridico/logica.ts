@@ -202,6 +202,7 @@ export const EXEMPLOS: Array<{ rotulo: string; valor: string }> = [
 export const TEXTO_ESTADO_NACIONAL: Record<string, string> = {
   ok: "respondeu",
   vazio: "respondeu, nenhum resultado",
+  refinar: "muitos processos — refine a busca",
   bloqueado: "bloqueou a consulta (rate limit)",
   captcha: "exige captcha — não burlamos",
   geo_bloqueado: "bloqueado fora do Brasil",
@@ -235,7 +236,11 @@ export function relatorioFontes(fontes: FonteNacionalLike[] | null | undefined):
   return (fontes ?? []).map((f) => {
     const texto = TEXTO_ESTADO_NACIONAL[f.estado] ?? f.estado;
     const tom: LinhaFonte["tom"] =
-      f.estado === "ok" ? "ok" : f.estado === "vazio" || f.estado === "pulado" ? "parcial" : "ruim";
+      f.estado === "ok"
+        ? "ok"
+        : f.estado === "vazio" || f.estado === "pulado" || f.estado === "refinar"
+          ? "parcial"
+          : "ruim";
     return {
       fonte: f.fonte,
       rotulo: f.fonte.startsWith("esaj-") ? `e-SAJ ${f.fonte.slice(5).toUpperCase()}` : f.fonte.toUpperCase(),

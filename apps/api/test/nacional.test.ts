@@ -21,6 +21,7 @@ const esajOk = (itens: Partial<ResultadoEsaj["itens"][number]>[] = []): Resultad
 const esajVazio = { estado: "vazio", itens: [] } as unknown as ResultadoEsaj;
 const esajBloqueado = { estado: "bloqueado", itens: [], motivo: "captcha" } as unknown as ResultadoEsaj;
 const esajErro = { estado: "erro", itens: [] } as unknown as ResultadoEsaj;
+const esajMuitos = { estado: "multiplos", itens: [] } as unknown as ResultadoEsaj;
 
 const failFetch = (async () => {
   throw new Error("rede indisponível no teste");
@@ -229,6 +230,31 @@ describe("Frota — matriz 91 × capacidades", () => {
     const { UFS_ESAJ_ABERTAS } = await import("../src/juridico/frota.js");
     expect(UFS_ESAJ_ABERTAS).toContain("sp");
     expect(UFS_ESAJ_ABERTAS).toContain("ac");
+  });
+});
+
+describe("e-SAJ 'muitos processos' — honestidade", () => {
+  it("estado multiplos sem itens vira 'refinar', não 'ok com 0'", async () => {
+    const r = await consultarNacional("José", {
+      esaj: async () => esajMuitos,
+      ufs: ["sp"],
+      agora: new Date(),
+    });
+    const sp = r.fontes.find((f) => f.fonte === "esaj-sp")!;
+    expect(sp.estado).toBe("refinar");
+    expect(sp.motivo).toContain("refine");
+    expect(r.aviso).toContain("e-SAJ SP");
+    expect(r.aviso).toContain("refine a busca");
+  });
+
+  it("multiplos COM itens continua 'ok' (lista válida)", async () => {
+    const r = await consultarNacional("João Carlos", {
+      esaj: async () => ({ estado: "multiplos", itens: [{ numeroProcesso: "1", uf: "sp", nomeParte: "JOÃO CARLOS DA SILVA", fonte: "esaj-sp" }] } as never),
+      ufs: ["sp"],
+      agora: new Date(),
+    });
+    expect(r.fontes.find((f) => f.fonte === "esaj-sp")!.estado).toBe("ok");
+    expect(r.itens).toHaveLength(1);
   });
 });
 
