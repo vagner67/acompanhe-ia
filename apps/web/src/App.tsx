@@ -2,19 +2,26 @@ import { useEffect, useState } from "react";
 import { authenticate, api, setSessao, type Sessao } from "./api2";
 import { AnotaScreen, ConcursosScreen, EmprestimosScreen, InicioScreen, InvestigaScreen, JuridicoScreen, LicitacoesScreen, PlanosScreen } from "./screens";
 import { Icon } from "./Icon";
+import { Sheet } from "./juridico/ui";
 import "./styles.css";
 
 type Aba = "inicio" | "anota" | "licitacoes" | "concursos" | "juridico" | "emprestimos" | "investiga" | "planos";
 
+/**
+ * Navegação: 5 destinos legíveis em 360 px. O resto fica em "Mais" (sheet) —
+ * nada foi removido, só agrupado (plano-refatoracao-ui §4).
+ */
 const NAV: Array<{ id: Aba; ico: string; label: string }> = [
   { id: "inicio", ico: "home", label: "Início" },
-  { id: "anota", ico: "note", label: "AnotA" },
   { id: "licitacoes", ico: "scroll", label: "Licitações" },
-  { id: "concursos", ico: "grad", label: "Concursos" },
   { id: "juridico", ico: "scale", label: "Jurídico" },
-  { id: "emprestimos", ico: "deal", label: "Empréstimos" },
-  { id: "investiga", ico: "search", label: "Investiga" },
-  { id: "planos", ico: "star", label: "Planos" },
+  { id: "concursos", ico: "grad", label: "Concursos" },
+];
+const MAIS: Array<{ id: Aba; ico: string; label: string; desc: string }> = [
+  { id: "anota", ico: "note", label: "AnotA", desc: "anotações e tarefas" },
+  { id: "emprestimos", ico: "deal", label: "Empréstimos", desc: "comparar ofertas" },
+  { id: "investiga", ico: "search", label: "Investiga", desc: "dossiês e buscas" },
+  { id: "planos", ico: "star", label: "Planos", desc: "assinatura e limites" },
 ];
 
 export default function App() {
@@ -22,6 +29,7 @@ export default function App() {
   const [sessao, setS] = useState<Sessao | null>(null);
   const [erro, setErro] = useState("");
   const [aba, setAba] = useState<Aba>("inicio");
+  const [maisAberto, setMaisAberto] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
 
   const toast = (m: string) => {
@@ -47,14 +55,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="brand">
-          Acompanhe.IA
-          <small>Finanças · Jurídico · Concursos & Licitações · Empréstimos</small>
-        </div>
+        <div className="brand">Acompanhe.IA</div>
         {sessao && (
           <div className="xp-pill">
             <b>{sessao.user.firstName}</b>
-            <div className="tiny">sessão segura · JWT</div>
           </div>
         )}
       </header>
@@ -79,7 +83,7 @@ export default function App() {
           {aba === "anota" && <AnotaScreen a={a} token={sessao.token} toast={toast} />}
           {aba === "licitacoes" && <LicitacoesScreen a={a} token={sessao.token} toast={toast} />}
           {aba === "concursos" && <ConcursosScreen a={a} token={sessao.token} toast={toast} />}
-          {aba === "juridico" && <JuridicoScreen a={a} token={sessao.token} toast={toast} />}
+          {aba === "juridico" && <JuridicoScreen a={a} toast={toast} />}
           {aba === "emprestimos" && <EmprestimosScreen a={a} token={sessao.token} toast={toast} />}
           {aba === "investiga" && <InvestigaScreen a={a} token={sessao.token} toast={toast} />}
           {aba === "planos" && <PlanosScreen a={a} token={sessao.token} toast={toast} />}
@@ -95,7 +99,37 @@ export default function App() {
             {n.label}
           </button>
         ))}
+        <button
+          className={MAIS.some((m) => m.id === aba) ? "on" : ""}
+          onClick={() => setMaisAberto(true)}
+          aria-label="mais seções"
+        >
+          <span className="ico" aria-hidden="true">⋯</span>
+          Mais
+        </button>
       </nav>
+
+      <Sheet aberto={maisAberto} titulo="Mais" onFechar={() => setMaisAberto(false)}>
+        <div className="sheet-lista">
+          {MAIS.map((m) => (
+            <button
+              key={m.id}
+              className="sheet-nav"
+              onClick={() => {
+                setAba(m.id);
+                setMaisAberto(false);
+              }}
+            >
+              <span className="ico"><Icon name={m.ico} /></span>
+              <span className="grow">
+                <b>{m.label}</b>
+                <span className="tiny">{m.desc}</span>
+              </span>
+              <span aria-hidden="true">›</span>
+            </button>
+          ))}
+        </div>
+      </Sheet>
     </div>
   );
 }

@@ -53,3 +53,12 @@ describe("formatarNumero — entrada com ou sem máscara", () => {
     expect(formatarNumero("123")).toBeNull();
   });
 });
+
+describe("rotas :cnj aceitam número SEM máscara (DataJud entrega assim)", () => {
+  it("a forma canônica é derivável de 20 dígitos e o DV continua sendo validado", async () => {
+    const { formatarNumero, isValidCnj } = await import("../src/juridico/cnj.js");
+    expect(formatarNumero("00069036920148110037")).toBe("0006903-69.2014.8.11.0037");
+    expect(isValidCnj(formatarNumero("00069036920148110037")!)).toBe(true);
+    expect(isValidCnj(formatarNumero("00069036920148110000")!)).toBe(false);
+  });
+});

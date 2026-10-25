@@ -107,11 +107,13 @@ export function api(token: string) {
     processo: (cnj: string) =>
       get<{ processo: Record<string, unknown>; movimentos: LegalEventDto[]; resumo: string }>(`/api/processos/${encodeURIComponent(cnj)}`),
     processoExplicar: (cnj: string) => get<{ explicacao: string; atos: unknown[] }>(`/api/processos/${encodeURIComponent(cnj)}/explicar`),
-    processoAcompanhar: (cnj: string, uf: string) => post(`/api/processos/${encodeURIComponent(cnj)}/acompanhar`, { alias: uf.toLowerCase() }),
+    // alias é derivado do próprio CNJ no servidor (91 tribunais) — mandar UF
+    // aqui já causou 404/422 em produção quando a UF não era do tribunal.
+    processoAcompanhar: (cnj: string) => post(`/api/processos/${encodeURIComponent(cnj)}/acompanhar`, {}),
     processoSync: (cnj: string) => post<{ novos: number; sigiloso: boolean }>(`/api/processos/${encodeURIComponent(cnj)}/sync`, {}),
-    processoBuscar: (cnj: string, uf: string) =>
+    processoBuscar: (cnj: string) =>
       get<{ processo: Record<string, unknown>; movimentos: LegalEventDto[]; resumo: string; rodape: string }>(
-        `/api/processos/buscar?cnj=${encodeURIComponent(cnj)}&alias=${encodeURIComponent(uf.toLowerCase())}`,
+        `/api/processos/buscar?cnj=${encodeURIComponent(cnj)}`,
       ),
     processoPerguntar: (cnj: string, question: string) =>
       post<RespostaAssistente>(`/api/processos/${encodeURIComponent(cnj)}/perguntar`, { question }),
@@ -125,6 +127,8 @@ export function api(token: string) {
       get<{ itens: DetalheTercero[]; rodape: string }>(`/api/processos/detalhes-lote?cnjs=${encodeURIComponent(cnjs.join(","))}`),
     processoBuscarWeb: (pergunta: string) => post<RespostaBuscador>("/api/processos/buscar-web", { pergunta }),
     processoFontes: () => get<CatalogoFontes>("/api/processos/fontes"),
+    // lista do usuário (o que ele já acompanha) — alimenta o estado inicial
+    processoMeus: () => get<{ processos: MeuProcesso[] }>("/api/processos"),
     processoBuscarIndice: (q: string, filtros?: { uf?: string; tribunal?: string; ano?: string }) =>
       get<BuscaIndiceResp>(
         `/api/processos/indice?q=${encodeURIComponent(q)}` +
@@ -281,6 +285,14 @@ export interface CatalogoFontes {
     documento: { fontes: string[]; ufs: string[] };
   };
   rodape: string;
+}
+export interface MeuProcesso {
+  numeroProcesso: string;
+  classe: string | null;
+  status: string | null;
+  tribunal: string | null;
+  ultimoMovimento: { nome: string; dataHora: string } | null;
+  alertasAtivos?: boolean;
 }
 export interface ItemIndice {
   processo: {

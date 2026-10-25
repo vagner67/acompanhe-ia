@@ -11,7 +11,7 @@
   "scripts": {
     "build": "pnpm -r --filter @acompanhe/shared build && pnpm -r --filter @acompanhe/api --filter @acompanhe/web build",
     "typecheck": "tsc -b packages/shared apps/api",
-    "test": "vitest run --root apps/api && vitest run --root packages/shared",
+    "test": "vitest run --root apps/api && vitest run --root apps/web && vitest run --root packages/shared",
     "test:all": "pnpm test && python3 -m unittest discover -s apps/bot/tests -v",
     "dev:api": "tsx watch apps/api/src/server.ts",
     "dev:web": "vite --config apps/web/vite.config.ts",

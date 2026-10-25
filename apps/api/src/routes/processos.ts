@@ -58,6 +58,17 @@ const consultaSchema = z.object({
   oabUser: z.string().max(64).optional(),
 });
 
+/**
+ * As rotas recebem CNJ de qualquer cliente (WebApp, bot, ingest) e o DataJud
+ * devolve o número SEM máscara. Normalizar aqui evita 422 indevido — foi o que
+ * quebrou o botão "Acompanhar" num processo real (DV válido, 20 dígitos).
+ */
+function cnjCanonico(bruto: string): string | null {
+  const decoded = decodeURIComponent(bruto);
+  const canonico = formatarNumero(decoded) ?? decoded;
+  return isValidCnj(canonico) ? formatCnj(parseCnj(canonico)!) : null;
+}
+
 export function processosRoutes(deps: ProcessosDeps) {
   return async function routes(app: FastifyInstance): Promise<void> {
     const service = makeJuridicoService({
@@ -91,10 +102,10 @@ export function processosRoutes(deps: ProcessosDeps) {
       const userId = await requireUser(req);
       if (!userId) return reply.code(401).send({ error: "não autenticado" });
       const { cnj } = req.params as { cnj: string };
-      const decoded = decodeURIComponent(cnj);
-      if (!isValidCnj(decoded)) return reply.code(422).send({ error: "número CNJ inválido (DV Res. 65/2008)", rule: "RF-B01" });
+      const cnjNorm = cnjCanonico(cnj);
+      if (!cnjNorm) return reply.code(422).send({ error: "número CNJ inválido (DV Res. 65/2008)", rule: "RF-B01" });
       const body = acompanharSchema.parse(req.body ?? {});
-      const parts = parseCnj(decoded)!;
+      const parts = parseCnj(cnjNorm)!;
       const alias = body.alias ?? aliasFromTribunal(parts.justica, parts.tribunal);
       const r = await service.acompanhar(userId, formatCnj(parts), body.role, alias ?? null);
       if (!r.created) return reply.code(409).send({ error: "já acompanhado", link: r.link, rule: "RB1" });
@@ -118,7 +129,9 @@ export function processosRoutes(deps: ProcessosDeps) {
       const subjectId = await requireUser(req);
       if (!subjectId) return reply.code(401).send({ error: "não autenticado" });
       const { cnj } = req.params as { cnj: string };
-      const processo = await deps.store.getCase(subjectId, decodeURIComponent(cnj));
+      const processo =
+        (await deps.store.getCase(subjectId, cnjCanonico(cnj) ?? decodeURIComponent(cnj))) ??
+        (await deps.store.getCase(subjectId, decodeURIComponent(cnj)));
       if (!processo) return reply.code(404).send({ error: "não acompanhado" });
       const movimentos = await deps.store.listEvents(processo.id);
       const resumo = resumoProcesso({ caso: processo, movimentos });
@@ -135,9 +148,9 @@ export function processosRoutes(deps: ProcessosDeps) {
       const q = z
         .object({ cnj: z.string().min(7).max(30), alias: z.string().min(2).max(40).optional() })
         .parse(req.query ?? {});
-      const decoded = decodeURIComponent(q.cnj);
-      if (!isValidCnj(decoded)) return reply.code(422).send({ error: "número CNJ inválido (DV Res. 65/2008)", rule: "RF-B01" });
-      const parts = parseCnj(decoded)!;
+      const canonico = cnjCanonico(q.cnj);
+      if (!canonico) return reply.code(422).send({ error: "número CNJ inválido (DV Res. 65/2008)", rule: "RF-B01" });
+      const parts = parseCnj(canonico)!;
       // 91 tribunais: a corte do (J,TR) + a superior do ramo (superiores guardam
       // números de ORIGEM; 5.01 = TRT1 e TST convivem) — mapa verificado 24/10/2026.
       const candidatos = q.alias ? [q.alias] : aliasCandidatesFromCnj(parts.justica, parts.tribunal);
@@ -438,10 +451,11 @@ export function processosRoutes(deps: ProcessosDeps) {
         return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
       }
       const { cnj } = req.params as { cnj: string };
-      const decoded = decodeURIComponent(cnj);
+      const decoded = cnjCanonico(cnj) ?? decodeURIComponent(cnj);
       const { question } = perguntaSchema.parse(req.body ?? {});
       // Caso acompanhado → dados persistidos; senão → consulta ao DataJud (sem gravar).
-      const caso = await deps.store.getCase(userId, decoded);
+      const caso =
+        (await deps.store.getCase(userId, decoded)) ?? (await deps.store.getCase(userId, decodeURIComponent(cnj)));
       let movimentos: LegalEventDto[] = [];
       if (caso) {
         movimentos = await deps.store.listEvents(caso.id);
@@ -468,8 +482,9 @@ export function processosRoutes(deps: ProcessosDeps) {
       const userId = await requireUser(req);
       if (!userId) return reply.code(401).send({ error: "não autenticado" });
       const { cnj } = req.params as { cnj: string };
-      const decoded = decodeURIComponent(cnj);
-      const caso = await deps.store.getCase(userId, decoded);
+      const decoded = cnjCanonico(cnj) ?? decodeURIComponent(cnj);
+      const caso =
+        (await deps.store.getCase(userId, decoded)) ?? (await deps.store.getCase(userId, decodeURIComponent(cnj)));
       if (!caso) return reply.code(404).send({ error: "acompanhe o processo primeiro (botão Acompanhar)", rule: "RF-B04" });
       if (!caso.alertasAtivos) await deps.store.updateCase(userId, decoded, { alertasAtivos: true });
       // Confirmação auditável no mesmo pipeline dos alertas (idempotente por dedupe).
@@ -490,7 +505,7 @@ export function processosRoutes(deps: ProcessosDeps) {
       const userId = await requireUser(req);
       if (!userId) return reply.code(401).send({ error: "não autenticado" });
       const { cnj } = req.params as { cnj: string };
-      const decoded = decodeURIComponent(cnj);
+      const decoded = cnjCanonico(cnj) ?? decodeURIComponent(cnj);
       const parts = parseCnj(decoded);
       if (!parts) return reply.code(422).send({ error: "número CNJ inválido" });
       const body = (req.body ?? {}) as { alias?: string };
