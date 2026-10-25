@@ -115,6 +115,20 @@ describe("GET /api/processos/pesquisar — paywall + detecção honesta", () => 
     expect(b.fontes[0].estado).toBe("multiplos");
   });
 
+  it("UF fora da cobertura (ex.: MT) → busca nas fontes verificadas + advertência honesta (nunca 'erro' mudo)", async () => {
+    const { app, ents } = makeApp({ fetchImpl: fetchDasFixtures() });
+    const t = await login(app);
+    const H = { authorization: `Bearer ${t}` };
+    await ents.grant("77", "juridica");
+    const r = await app.inject({ method: "GET", url: "/api/processos/pesquisar?q=Joao+Carlos+da+Silva&uf=mt", headers: H });
+    expect(r.statusCode).toBe(200);
+    const b = r.json();
+    expect(b.advertencia).toContain("MT ainda não está conectado");
+    expect(b.advertencia).toContain("AL e SP");
+    expect(b.fontes.length).toBe(2); // rodou em todas as verificadas
+    expect(b.itens.length).toBeGreaterThan(10); // itens reais das fixtures
+  });
+
   it("nome de 1 palavra → advertência de homônimos; CPF válido sem registros → vazio honesto", async () => {
     const { app, ents } = makeApp({ fetchImpl: fetchDasFixtures() });
     const t = await login(app);

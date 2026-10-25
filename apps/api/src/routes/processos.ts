@@ -167,17 +167,27 @@ export function processosRoutes(deps: ProcessosDeps) {
       if (det.tipo === "cnj") {
         return reply.code(422).send({ error: "número de processo — use a busca de processo do app", rule: "deteccao" });
       }
-      const ufs = q.uf && q.uf.toLowerCase() !== "todas" ? [q.uf.toLowerCase()] : undefined;
-      const { pesquisarTerceiros } = await import("../juridico/pesquisa.js");
+      // UF fora da cobertura verificada → busca em TODAS as fontes verificadas,
+      // com advertência honesta do motivo (nunca "erro" silencioso — plano-busca-unificada §3.4).
+      const ufPedida = q.uf && q.uf.toLowerCase() !== "todas" ? q.uf.toLowerCase() : undefined;
+      const { pesquisarTerceiros, COBERTURA_UFS } = await import("../juridico/pesquisa.js");
+      const ufCoberta = !ufPedida || COBERTURA_UFS.includes(ufPedida);
+      const ufs = ufPedida && ufCoberta ? [ufPedida] : undefined;
       const r = await pesquisarTerceiros(det.tipo as "nome" | "cpf" | "cnpj", det.valor, {
         ...(ufs ? { ufs } : {}),
         ...(q.pagina ? { pagina: q.pagina } : {}),
         ...(deps.datajudOpts?.fetchImpl ? { fetchImpl: deps.datajudOpts.fetchImpl } : {}),
       });
+      const advertencias = [
+        ...(det.advertencia ? [det.advertencia] : []),
+        ...(ufPedida && !ufCoberta
+          ? [`tribunal ${ufPedida.toUpperCase()} ainda não está conectado — cobertura atual: ${COBERTURA_UFS.map((u) => u.toUpperCase()).join(" e ")}; a busca foi feita nas fontes verificadas`]
+          : []),
+      ];
       return reply.send({
         tipo: det.tipo,
         ...(det.formato ? { formato: det.formato } : {}),
-        ...(det.advertencia ? { advertencia: det.advertencia } : {}),
+        ...(advertencias.length ? { advertencia: advertencias.join(" · ") } : {}),
         fontes: r.fontes,
         itens: r.itens,
         rodape: r.rodape,

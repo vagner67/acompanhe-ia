@@ -9,6 +9,8 @@ import { mapDoc } from "./service.js";
 import type { DatajudDoc } from "./types.js";
 import type { DatajudClientOpts } from "./datajud.js";
 
+export { COBERTURA_UFS };
+
 export interface PesquisaTerceirosOpts {
   ufs?: string[]; // default: todas as verificadas
   pagina?: number;

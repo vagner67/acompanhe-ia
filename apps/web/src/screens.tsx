@@ -395,6 +395,7 @@ export function JuridicoScreen({ a, toast }: P) {
   const [terceiros, setTerceiros] = useState<ProcessoTercero[]>([]);
   const [fontesInfo, setFontesInfo] = useState<ResultadoEsaj[]>([]);
   const [rodapeTerc, setRodapeTerc] = useState("");
+  const [advertenciaBusca, setAdvertenciaBusca] = useState("");
   const [detalhesMap, setDetalhesMap] = useState<Record<string, DetalheTercero>>({});
   const [progresso, setProgresso] = useState<{ ativo: boolean; feitos: number; total: number; rotulo: string }>({
     ativo: false,
@@ -472,6 +473,7 @@ export function JuridicoScreen({ a, toast }: P) {
           setChat([]);
           setTerceiros([]);
           setFontesInfo([]);
+          setAdvertenciaBusca("");
         }
         return;
       }
@@ -479,6 +481,7 @@ export function JuridicoScreen({ a, toast }: P) {
       setTerceiros(r.itens);
       setFontesInfo(r.fontes);
       setRodapeTerc(r.rodape);
+      setAdvertenciaBusca(r.advertencia ?? "");
       setDetalhesMap({});
       setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
       if (!r.itens.length) toast("nenhum processo público encontrado nesta consulta (ver rodapé)");
@@ -500,6 +503,7 @@ export function JuridicoScreen({ a, toast }: P) {
       const r1 = await a.processoPesquisar(texto, "todas", 1);
       let itens = [...r1.itens];
       let fontes = [...r1.fontes];
+      setAdvertenciaBusca(r1.advertencia ?? "");
       const extras: Array<{ uf: string; pagina: number }> = [];
       for (const f of r1.fontes) {
         for (let p = 2; p <= Math.min(f.ultimaPagina, 10); p++) extras.push({ uf: f.uf, pagina: p });
@@ -693,6 +697,9 @@ export function JuridicoScreen({ a, toast }: P) {
                       : "fonte indisponível neste momento"}
             </p>
           ))}
+          {advertenciaBusca && (
+            <p className="mut" style={{ fontSize: "0.78rem", margin: "2px 0", color: "var(--amber, #b45309)" }}>⚠ {advertenciaBusca}</p>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
             {terceiros.map((it) => {
               const det = detalhesMap[it.numeroProcesso];
