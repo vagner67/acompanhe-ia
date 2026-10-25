@@ -422,3 +422,21 @@ ações e **ignora candidato que já foi revertido** (snapshot correto: numa aç
 `paramsAntes` é o ajuste que degradou), registrando no motivo
 `· N candidato(s) ignorado(s) por já ter(em) sido revertido(s) antes`. Teste:
 `candidato já revertido não é reproposto`. Placar: **515 ✔ / 1 skip**.
+
+**Estado final medido em produção (deploy `d2b94bc`, 3 ciclos seguidos):**
+
+| Ciclo | Duração | IA respondendo | Promovidos | Revertidos | Desativados |
+|---|---|---|---|---|---|
+| 1 | 79,7 s | `esaj-sp` | `datajud` | — | `djen` (geo-bloqueio), `osint-hibp` (sem chave) |
+| 2 | 47,0 s | `esaj-sp` | — | `datajud` | `djen`, `osint-hibp` |
+| 3 | 45,0 s | `esaj-sp` | — | — | `djen`, `osint-hibp` |
+
+Leitura do ciclo 3: `datajud` e `osint-dominio` ficam `mantida` com o candidato revertido
+bloqueado — o motor **aprendeu** e parou de oscilar. `esaj-sp` segue `mantida` com
+“o portal exige termo mais específico”, que é a verdade do e-SAJ para nome comum, e a IA é
+quem escreve essa leitura a cada ciclo. `djen` continua OFF porque o 403 é geo-bloqueio real
+(só volta com `DJEN_RELAY_URL`); `osint-hibp` porque falta `HIBP_API_KEY`.
+
+Arquivos tocados nesta rodada (nada fora do núcleo de auto-aperfeiçoamento):
+`nucleo/otimizador.ts`, `nucleo/incidentes.ts`, `nucleo/ia-diagnostico.ts`, `nucleo/store.ts`,
+`jobs/coleta.ts`, `test/nucleo.test.ts`, `plano.md`.
