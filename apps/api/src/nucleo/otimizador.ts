@@ -193,7 +193,18 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
 
   const historico: MetricaColeta[] = await opts.store.metricas(coletor.id, 20).catch(() => []);
   const acoes = await opts.store.acoes(coletor.id, 10).catch(() => []);
-  const ultimaAplicada = [...acoes].reverse().find((a) => a.resultado === "aplicada" && a.paramsAntes);
+  // Só existe rollback PENDENTE se a última decisão aplicada ainda não foi
+  // revertida. Antes, o histórico guardava a promoção para sempre e o ciclo
+  // reencontrava a MESMA promoção antiga em toda execução: revertia de novo,
+  // subia a versão e registrava "rollback aplicado" eternamente (medido em
+  // produção: esaj-sp/sp-ce "revertida" em todos os ciclos).
+  const ultimaDecisao = [...acoes]
+    .reverse()
+    .find((a) => a.resultado === "aplicada" || a.resultado === "revertida");
+  const ultimaAplicada =
+    ultimaDecisao && ultimaDecisao.resultado === "aplicada" && ultimaDecisao.paramsAntes
+      ? ultimaDecisao
+      : undefined;
 
   const atualizarEstado = async (patch: Partial<EstadoColetor>): Promise<EstadoColetor> => {
     const novo: EstadoColetor = {
@@ -229,7 +240,7 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
       await registrar({
         origem: "regras",
         tipo: "reverter",
-        acao: `revertido para v${estado.versao - 1}: ${JSON.stringify(ultimaAplicada.paramsAntes)}`,
+        acao: `revertido para ${JSON.stringify(ultimaAplicada.paramsAntes)} (v${estado.versao} → v${novo.versao})`,
         evidencia: JSON.stringify({
           scoreAgora: vigente.score,
           scorePromocao: numeroFinito(scoreDaPromocao) ? scoreDaPromocao : null,

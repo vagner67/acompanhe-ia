@@ -483,6 +483,31 @@ describe("Motor: mede, promove com canário, reverte e desliga", () => {
     expect((await store.obter(coletor.id))!.versao).toBe(3);
   });
 
+  it("rollback roda UMA vez: o ciclo seguinte não reencontra a mesma promoção antiga", async () => {
+    const store = new InMemoryNucleoStore();
+    await store.salvar({ ...estadoInicial("teste-motor", { timeoutMs: 20_000 }), versao: 2 });
+    // promoção antiga de score 90 (o modelo "v2" aplicado no passado)
+    await store.registrarAcao({
+      coletorId: "teste-motor",
+      ts: new Date().toISOString(),
+      origem: "regras",
+      tipo: "ajuste",
+      acao: "v1→v2",
+      evidencia: JSON.stringify({ score: 90 }),
+      resultado: "aplicada",
+      motivo: "promoção medida",
+      versaoAntes: 1,
+      versaoDepois: 2,
+      paramsAntes: { timeoutMs: 20_000 },
+      paramsDepois: { timeoutMs: 20_000 },
+    });
+    const coletor = coletorDeTeste({ executar: () => ok(1) }); // score atual muito pior que 90
+    const r1 = await cicloColetor(coletor, { store, pausaMs: 0, usarIA: false });
+    expect(r1.acao).toBe("revertida");
+    const r2 = await cicloColetor(coletor, { store, pausaMs: 0, usarIA: false });
+    expect(r2.acao).not.toBe("revertida"); // antes: revertia para sempre
+  });
+
   it("disjuntor: fonte em recuo não é consultada (orçamento não é queimado)", async () => {
     const store = new InMemoryNucleoStore();
     await store.salvar({

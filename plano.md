@@ -384,3 +384,10 @@ investiga 7 — incluindo `osint-dominio`, `osint-email` e `busca-web`).
 **Placar após as mudanças**: API **510 ✔ / 1 skip**, `nucleo.test.ts` **58 ✔**, web **18 ✔**,
 `tsc -b --force` sem erro. Testes novos: `refino não desativa`, `coletor em recuo é
 interpretado pela IA no mesmo ciclo`.
+
+**Bug de recursão encontrado na verificação em produção (corrigido):** o ciclo reportava
+`esaj-sp`/`esaj-ce` como `revertida` em **todas** as execuções e a versão subia a cada ciclo.
+Causa: o rollback procurava a última ação `aplicada` do histórico — e a promoção antiga ficava
+lá para sempre, então cada ciclo “descobria” um rollback pendente que já tinha sido feito.
+Agora só há rollback quando a decisão mais recente (`aplicada` ou `revertida`) é uma promoção
+ainda não desfeita. Teste: `rollback roda UMA vez`. Placar: **511 ✔ / 1 skip**.
