@@ -163,6 +163,12 @@ async function comPrazo<T>(p: Promise<T>, ms: number): Promise<{ ok: true; valor
   }
 }
 
+/** Nome legível da fonte para as mensagens ao usuário (nada de `esaj-al` cru). */
+function rotuloFonte(fonte: string): string {
+  const m = fonte.match(/^esaj-([a-z]{2})$/);
+  return m ? `e-SAJ ${m[1]!.toUpperCase()}` : fonte;
+}
+
 export async function consultarNacional(termo: string, opts: ConsultarNacionalOpts = {}): Promise<ResultadoNacional> {
   const t0 = Date.now();
   const det = detectarConsulta(termo);
@@ -384,7 +390,7 @@ export async function consultarNacional(termo: string, opts: ConsultarNacionalOp
       : bloqueadas.length
         ? `Nenhuma fonte de nome respondeu: ${bloqueadas.map((b) => `${b.fonte} (${b.motivo ?? b.estado})`).join("; ")}.`
         : paraRefinar.length
-          ? `Nenhum processo veio, mas ${paraRefinar.join(", ")} ${paraRefinar.length > 1 ? "responderam" : "respondeu"} "muitos processos" — refine a busca (nome completo, CPF ou nº do processo).`
+          ? `Nenhum processo veio, mas ${paraRefinar.map(rotuloFonte).join(", ")} ${paraRefinar.length > 1 ? "responderam" : "respondeu"} "muitos processos" — refine a busca (nome completo, CPF ou nº do processo).`
           : "Nenhum processo público encontrado nas fontes consultadas.";
 
   return {
