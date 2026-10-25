@@ -317,3 +317,18 @@ GET /nacional?uf=ac → fontes[esaj-ac].perfilVersao = 3   ← a busca USOU o pe
 ### 10.4 Testes
 
 `447 API` + `18 web` (eram 442/17). Novos: `ciclo-fechado.test.ts` (12) cobrindo aplicação do perfil, store compartilhado, Prisma (salvar/vigente/histórico/rollback/métrica/dado sujo) e resiliência; job (12) cobrindo promoção real, custo do ciclo, prazo e deriva.
+
+### 10.5 Produção — ciclo fechado e promoção REAL (`fac2c9f`, 25/10 04h20)
+
+```
+GET  /auto  → 200, 5 perfis (sem P2021: tabelas criadas pelo prisma db push do deploy/start.sh)
+POST /auto/ciclo → 200, 64,7 s (e-SAJ AL respondeu em 19,7 s; dentro do prazo de 120 s)
+  djen     manter   · não respondeu (403 geo)
+  esaj-sp  manter   · sem itens
+  esaj-al  PROMOVER · ganho de 5,18 pts (ε=3) com páginas 3→4
+  esaj-ac  manter   · melhor vizinho 138,72 < atual 139,39 + ε
+  esaj-ce  manter   · sem itens
+GET  /auto  → esaj-al v2 · 1 versão gravada
+```
+
+Ou seja: em produção o ciclo **mede vizinhos, encontra ganho, promove e grava**. A persistência é verificada na §10.6 (sobrevivência a restart).
