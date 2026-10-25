@@ -10,11 +10,12 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { buscarWeb, parseDdgHtml } from "../src/juridico/buscaWeb.js";
+import { buscarWeb, buscarWebDetalhado, ehAnomalia, parseDdgHtml } from "../src/juridico/buscaWeb.js";
 import { responderComBuscador } from "../src/juridico/buscaIA.js";
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "ddg");
 const ddgHtml = readFileSync(join(dir, "busca-cpc.html"), "utf8");
+const anomalyHtml = readFileSync(join(dir, "anomalia-202.html"), "utf8");
 
 describe("DuckDuckGo HTML (fixture REAL de 24/10/2026)", () => {
   it("parse: ≥8 fontes com URL decodificada do redirect uddg, título e trecho reais", () => {
@@ -34,6 +35,22 @@ describe("DuckDuckGo HTML (fixture REAL de 24/10/2026)", () => {
   });
 });
 
+describe("bloqueio anti-robô do DDG (resposta REAL 202/anomaly de 24/10/2026)", () => {
+  it("ehAnomalia reconhece a página real de bloqueio", () => {
+    expect(ehAnomalia(anomalyHtml)).toBe(true);
+    expect(ehAnomalia(ddgHtml)).toBe(false);
+  });
+
+  it("bloqueado → 0 fontes + diagnóstico honesto (nunca inventa)", async () => {
+    const f = (async () => new Response(anomalyHtml, { status: 202 })) as typeof fetch;
+    const r = await buscarWebDetalhado("prazo apelacao", { fetchImpl: f, tentativas: 1 });
+    expect(r.fontes).toEqual([]);
+    expect(r.diagnostico.length).toBeGreaterThan(0);
+    expect(r.diagnostico[0]!.status).toBe(202);
+    expect(r.diagnostico[0]!.motivo).toContain("anti-robô");
+  });
+});
+
 describe("modo IA do buscador (buscaIA) — resposta sempre com fonte", () => {
   it("sem chave → provedor duckduckgo, geradaPorIA=false, resposta cita as fontes reais", async () => {
     const f = (async (url: RequestInfo | URL) => {
@@ -46,6 +63,7 @@ describe("modo IA do buscador (buscaIA) — resposta sempre com fonte", () => {
     expect(r.fontes.length).toBeGreaterThanOrEqual(8);
     expect(r.resposta).toContain("DuckDuckGo");
     expect(r.resposta).toContain("AI_PROVIDER"); // instrução honesta de configuração
+    expect(r.diagnostico.length).toBeGreaterThan(0); // tentativas reais expostas
   });
 
   it("AI_PROVIDER=tavily + chave → resposta gerada com as fontes do provedor", async () => {
@@ -77,6 +95,17 @@ describe("modo IA do buscador (buscaIA) — resposta sempre com fonte", () => {
     expect(r.geradaPorIA).toBe(true);
     expect(r.resposta).toContain("15 dias úteis");
     expect(r.fontes[0]!.url).toContain("planalto.gov.br");
+    expect(Array.isArray(r.diagnostico)).toBe(true);
+  });
+
+  it("sem chave e DDG bloqueado → explica o bloqueio e indica a chave gratuita (não inventa)", async () => {
+    const f = (async () => new Response(anomalyHtml, { status: 202 })) as typeof fetch;
+    const r = await responderComBuscador("prazo de apelação", { fetchImpl: f, env: {} });
+    expect(r.provedor).toBe("duckduckgo");
+    expect(r.geradaPorIA).toBe(false);
+    expect(r.fontes).toEqual([]);
+    expect(r.resposta).toContain("tavily.com");
+    expect(r.resposta).toContain("não invento resultados");
   });
 
   it("provedor pago falha → cai nos resultados REAIS do DDG (nunca inventa)", async () => {

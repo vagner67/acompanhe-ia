@@ -365,7 +365,7 @@ export function ConcursosScreen({ a, toast }: P) {
 }
 
 // ═══════════════════════ JURÍDICO ═══════════════════════
-type ChatMsg = { quem: "user" | "ia"; texto: string; fontes?: string[]; rodape?: string; fontesWeb?: FonteWebDto[]; provedor?: string };
+type ChatMsg = { quem: "user" | "ia"; texto: string; fontes?: string[]; rodape?: string; fontesWeb?: FonteWebDto[]; provedor?: string; diagnostico?: string[] };
 
 const fmtDataBR = (iso: string) => {
   const d = new Date(iso);
@@ -558,6 +558,7 @@ export function JuridicoScreen({ a, toast }: P) {
           quem: "ia",
           texto: `${r.geradaPorIA ? "🤖 resposta gerada com citações" : "🌐 resultados reais da web"} · provedor: ${r.provedor}\n\n${r.resposta}`,
           fontesWeb: r.fontes,
+          diagnostico: (r.diagnostico ?? []).map((d) => `${d.backend} ${d.status}${d.motivo ? ` (${d.motivo})` : ""}`),
           rodape: r.rodape,
         },
       ]);
@@ -898,6 +899,11 @@ export function JuridicoScreen({ a, toast }: P) {
                       <div className="mut mono" style={{ fontSize: "0.68rem", marginTop: 2 }}>{f.url}</div>
                     </a>
                   ))}
+                </div>
+              )}
+              {m.diagnostico && m.diagnostico.length > 0 && (
+                <div className="mut mono" style={{ fontSize: "0.66rem", marginTop: 6 }}>
+                  tentativas: {m.diagnostico.join(" · ")}
                 </div>
               )}
               {m.rodape && (

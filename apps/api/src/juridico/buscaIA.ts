@@ -15,13 +15,15 @@
  *     groundingMetadata.groundingChunks (fontes reais do Google).
  * Sempre retorna `fontes` reais; nunca resposta sem fonte.
  */
-import { buscarWeb, type FonteWeb } from "./buscaWeb.js";
+import { buscarWebDetalhado, type DiagnosticoBusca, type FonteWeb } from "./buscaWeb.js";
 
 export interface RespostaBuscador {
   provedor: "duckduckgo" | "tavily" | "perplexity" | "gemini";
   geradaPorIA: boolean;
   resposta: string;
   fontes: FonteWeb[];
+  /** tentativas reais da busca pública (backend/status/motivo) — nada opaco */
+  diagnostico: DiagnosticoBusca[];
 }
 
 export function provedorConfigurado(env: Record<string, string | undefined> = process.env): {
@@ -36,7 +38,12 @@ export function provedorConfigurado(env: Record<string, string | undefined> = pr
 
 function montarRespostaDasFontes(fontes: FonteWeb[], pergunta: string): string {
   if (fontes.length === 0) {
-    return `Não encontrei resultados públicos na web para “${pergunta}”. Reformule com nome completo, CPF ou número do processo.`;
+    return [
+      `A busca web pública não devolveu resultados para “${pergunta}” agora.`,
+      "O buscador gratuito (DuckDuckGo) limita consultas vindas de servidores — não é erro seu, e eu não invento resultados.",
+      "Para a busca web com respostas garantidas e citações (modo IA), configure AI_PROVIDER=tavily e AI_API_KEY com a chave gratuita de tavily.com (1.000 consultas/mês, sem cartão).",
+      "Enquanto isso, a busca por nº de processo (91 tribunais) e por nome/CPF nas fontes verificadas continua funcionando normalmente.",
+    ].join("\n\n");
   }
   const linhas = fontes.slice(0, 6).map((f, i) => {
     const trecho = f.trecho ? ` — “${f.trecho.slice(0, 220)}${f.trecho.length > 220 ? "…" : ""}”` : "";
@@ -50,7 +57,7 @@ function montarRespostaDasFontes(fontes: FonteWeb[], pergunta: string): string {
   ].join("\n");
 }
 
-async function tavily(pergunta: string, key: string, f: typeof fetch): Promise<RespostaBuscador> {
+async function tavily(pergunta: string, key: string, f: typeof fetch): Promise<Omit<RespostaBuscador, "diagnostico">> {
   const resp = await f("https://api.tavily.com/search", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -74,7 +81,7 @@ async function tavily(pergunta: string, key: string, f: typeof fetch): Promise<R
   };
 }
 
-async function perplexity(pergunta: string, key: string, f: typeof fetch): Promise<RespostaBuscador> {
+async function perplexity(pergunta: string, key: string, f: typeof fetch): Promise<Omit<RespostaBuscador, "diagnostico">> {
   const resp = await f("https://api.perplexity.ai/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
@@ -99,7 +106,7 @@ async function perplexity(pergunta: string, key: string, f: typeof fetch): Promi
   };
 }
 
-async function gemini(pergunta: string, key: string, f: typeof fetch): Promise<RespostaBuscador> {
+async function gemini(pergunta: string, key: string, f: typeof fetch): Promise<Omit<RespostaBuscador, "diagnostico">> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
   const resp = await f(url, {
     method: "POST",
@@ -137,11 +144,15 @@ export async function responderComBuscador(
 ): Promise<RespostaBuscador> {
   const f = opts.fetchImpl ?? fetch;
   const { provedor, key } = provedorConfigurado(opts.env);
-  const fontesBase = await buscarWeb(pergunta, { fetchImpl: f }).catch(() => [] as FonteWeb[]);
+  const base = await buscarWebDetalhado(pergunta, { fetchImpl: f }).catch(() => ({
+    fontes: [] as FonteWeb[],
+    diagnostico: [] as DiagnosticoBusca[],
+  }));
+  const fontesBase = base.fontes;
   try {
-    if (provedor === "tavily" && key) return await tavily(pergunta, key, f);
-    if (provedor === "perplexity" && key) return await perplexity(pergunta, key, f);
-    if (provedor === "gemini" && key) return await gemini(pergunta, key, f);
+    if (provedor === "tavily" && key) return { ...(await tavily(pergunta, key, f)), diagnostico: base.diagnostico };
+    if (provedor === "perplexity" && key) return { ...(await perplexity(pergunta, key, f)), diagnostico: base.diagnostico };
+    if (provedor === "gemini" && key) return { ...(await gemini(pergunta, key, f)), diagnostico: base.diagnostico };
   } catch {
     // provedor pago falhou → cai nos resultados REAIS do DDG (nunca inventar)
   }
@@ -150,5 +161,6 @@ export async function responderComBuscador(
     geradaPorIA: false,
     resposta: montarRespostaDasFontes(fontesBase, pergunta),
     fontes: fontesBase,
+    diagnostico: base.diagnostico,
   };
 }

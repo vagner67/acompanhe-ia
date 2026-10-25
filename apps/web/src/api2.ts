@@ -251,6 +251,7 @@ export interface RespostaBuscador {
   geradaPorIA: boolean;
   resposta: string;
   fontes: FonteWebDto[];
+  diagnostico: { backend: string; status: number; bytes: number; motivo?: string }[];
   rodape: string;
 }
 export interface ProcessoTercero {
