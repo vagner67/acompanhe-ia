@@ -20,6 +20,17 @@ export function parseCnj(numero: string): CnjParts | undefined {
   return { sequencial: m[1]!, dd: m[2]!, ano: m[3]!, justica: m[4]!, tribunal: m[5]!, origem: m[6]! };
 }
 
+/**
+ * Normaliza qualquer entrada (com ou sem máscara) para o formato CNJ canônico.
+ * `deteccao` entrega só os 20 dígitos — `parseCnj` exige pontuação; este é o
+ * ponto único que converte. Retorna null quando não são 20 dígitos.
+ */
+export function formatarNumero(bruto: string): string | null {
+  const digitos = bruto.replace(/\D+/g, "");
+  if (digitos.length !== 20) return null;
+  return `${digitos.slice(0, 7)}-${digitos.slice(7, 9)}.${digitos.slice(9, 13)}.${digitos.slice(13, 14)}.${digitos.slice(14, 16)}.${digitos.slice(16, 20)}`;
+}
+
 export function formatCnj(p: CnjParts): string {
   return `${p.sequencial}-${p.dd}.${p.ano}.${p.justica}.${p.tribunal}.${p.origem}`;
 }

@@ -44,3 +44,12 @@ describe("91 tribunais do DataJud (mapa medido 24/10/2026)", () => {
     expect(aliasCandidatesFromCnj("1", "01")).toEqual([]); // STF não está no DataJud
   });
 });
+
+describe("formatarNumero — entrada com ou sem máscara", () => {
+  it("20 dígitos → formato canônico; entrada já formatada continua igual", async () => {
+    const { formatarNumero } = await import("../src/juridico/cnj.js");
+    expect(formatarNumero("00069036920148110037")).toBe("0006903-69.2014.8.11.0037");
+    expect(formatarNumero("0006903-69.2014.8.11.0037")).toBe("0006903-69.2014.8.11.0037");
+    expect(formatarNumero("123")).toBeNull();
+  });
+});

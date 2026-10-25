@@ -7,9 +7,11 @@ import { fileURLToPath } from "node:url";
 import { loadConfig, type Config } from "./config.js";
 import { JwtService } from "./security/jwt.js";
 import { verifyTelegramInitData } from "./security/telegram-initdata.js";
+import { InMemoryIndiceStore } from "./juridico/indice.js";
 import { InMemoryPaymentStore, type PaymentRecord, type PaymentStore } from "./store.js";
 import { PushinpayClient, processPushinpayWebhook } from "./payments/pushinpay.js";
 import { InMemoryEntitlementsStore, type Entitlements } from "./entitlements.js";
+import { PrismaIndiceStore } from "./juridico/indice-prisma.js";
 import {
   PrismaEntitlements,
   PrismaLegalStore,
@@ -72,6 +74,8 @@ export interface AppDeps {
     oabVerified?: Set<string>;
     datajud?: typeof import("./juridico/datajud.js").fetchProcessos;
     datajudOpts?: import("./juridico/datajud.js").DatajudClientOpts;
+    indice?: import("./juridico/indice.js").IndiceStore;
+    serviceToken?: () => string | null;
   };
   admin?: { store?: AdminStore };
   minhas?: { store?: MinhasStore; ocr?: import("./minhas/service.js").OcrProvider };
@@ -270,6 +274,9 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
     deps.juridico?.store ?? (dbForStores ? new PrismaLegalStore(dbForStores) : new InMemoryLegalStore());
   // RF-B04 — alertas de movimentação: pipeline real (AlertEvent → worker → Telegram).
   const legalAlertSink: AlertSink = dbForStores ? new PrismaAlertSink(dbForStores) : new InMemoryAlertSink();
+  // Índice próprio do Jurídico (plano-refatoracao §6.2): Prisma quando há banco.
+  const indiceStore: import("./juridico/indice.js").IndiceStore =
+    deps.juridico?.indice ?? (dbForStores ? new PrismaIndiceStore(dbForStores) : new InMemoryIndiceStore());
   void app.register(
     processosRoutes({
       jwt,
@@ -280,6 +287,8 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
       ...(deps.juridico?.oabVerified ? { oabVerified: deps.juridico.oabVerified } : {}),
       ...(deps.juridico?.datajud ? { datajud: deps.juridico.datajud } : {}),
       ...(deps.juridico?.datajudOpts ? { datajudOpts: deps.juridico.datajudOpts } : {}),
+      indice: indiceStore,
+      ...(deps.juridico?.serviceToken ? { serviceToken: deps.juridico.serviceToken } : {}),
     }),
   );
   // Empréstimo (plano.md §5) — mesma porta. RE1: nenhuma rota move dinheiro.

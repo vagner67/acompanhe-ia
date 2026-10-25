@@ -232,6 +232,7 @@ model LegalCase {
   movimentosCount Int   @default(0)
   fieldStatus   String  @default("pendente")
   alertasAtivos Boolean @default(false) // RF-B04 — botão Alertar (novo_movimento → Telegram)
+  ultimaVerificacao String? @db.Text // P4 — monitoramento por polling (worker)
   raw           Json?
   createdAt String   @db.Text
   updatedAt String   @db.Text
@@ -806,4 +807,59 @@ model ServiceProbe {
 
   @@index([service, ts])
   @@index([ts])
+}
+
+// ————————————————— Índice próprio do Jurídico (plano-refatoracao §6.2) —————————————————
+// Pipeline desacoplado (padrão Jusbrasil): ingestão (DataJud/e-SAJ) → índice
+// consultável. LGPD: NUNCA guardamos CPF/CNPJ em claro — só SHA-256 (documentoHash).
+model ProcessoIndice {
+  numeroCnj           String    @id @db.VarChar(25) // NNNNNNN-DD.AAAA.J.TR.OOOO
+  tribunal            String    @db.VarChar(40) // alias DataJud ou esaj-uf
+  uf                  String?   @db.VarChar(2)
+  grau                String?   @db.VarChar(4)
+  classe              String?
+  assunto             String?
+  orgaoJulgador       String?
+  valorCausa          Float?
+  dataAjuizamento     String?   @db.VarChar(10) // yyyy-MM-dd
+  status              String?   @db.VarChar(20)
+  ultimoMovimentoNome String?
+  ultimoMovimentoData String?   @db.VarChar(30)
+  fonte               String    @db.VarChar(40)
+  atualizadoEm        DateTime  @default(now())
+  partes              ParteIndice[]
+  movimentos          MovimentoIndice[]
+
+  @@index([tribunal])
+  @@index([dataAjuizamento])
+  @@index([atualizadoEm])
+}
+
+model ParteIndice {
+  id              String        @id @default(uuid()) @db.Uuid
+  numeroCnj       String        @db.VarChar(25)
+  processo        ProcessoIndice @relation(fields: [numeroCnj], references: [numeroCnj], onDelete: Cascade)
+  nome            String
+  nomeNormalizado String        @db.VarChar(300)
+  documentoHash   String?       @db.VarChar(64) // SHA-256 dos dígitos (LGPD)
+  polo            String?       @db.VarChar(40)
+  tipoPessoa      String?       @db.VarChar(10)
+  scoreVinculo    Float         @default(0.5)
+  motivoVinculo   String        @db.VarChar(40)
+
+  @@index([nomeNormalizado])
+  @@index([documentoHash])
+  @@index([numeroCnj])
+}
+
+model MovimentoIndice {
+  id         String         @id @default(uuid()) @db.Uuid
+  numeroCnj  String         @db.VarChar(25)
+  processo   ProcessoIndice @relation(fields: [numeroCnj], references: [numeroCnj], onDelete: Cascade)
+  codigo     Int
+  nome       String
+  dataHora   String         @db.VarChar(30)
+
+  @@unique([numeroCnj, codigo, dataHora])
+  @@index([numeroCnj, dataHora])
 }

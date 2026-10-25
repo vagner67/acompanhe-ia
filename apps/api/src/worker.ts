@@ -10,6 +10,8 @@
 import { createDb } from "@acompanhe/db";
 import { ALERT_STATUS, ALERT_CHANNELS } from "@acompanhe/shared";
 import { deliverPending, type AlertSender, type DeliveryQueue, type PendingAlert, type SendResult, defaultDeliverOptions } from "./jobs/runner.js";
+import { rodarMonitoramento, type CasoMonitorado } from "./jobs/monitor.js";
+import { fetchProcessos } from "./juridico/datajud.js";
 
 /** Sender real do Telegram (Bot API sendMessage) — 429/403 mapeados para a política. */
 export function telegramSender(botToken: string, fetchFn: typeof fetch = fetch): AlertSender {
@@ -107,6 +109,7 @@ async function main() {
   if (!botToken) console.warn("[worker] BOT_TOKEN ausente — entregas falharão como retryable");
 
   let cycles = 0; // G2: conta ciclos para o expurgo de retenção
+  let ultimoMonitor = 0; // P4 — monitoramento por polling (intervalo próprio)
 
   const cycle = async () => {
     const s = await deliverPending(queue, sender, defaultDeliverOptions);
@@ -117,6 +120,59 @@ async function main() {
     }
     if (s.failed > 0 || s.blocked > 0) {
       await db.opsEvent.create({ data: { source: "worker", kind: "alert_failed", service: "worker", ok: false, detail: { failed: s.failed, blocked: s.blocked } } }).catch(() => undefined);
+    }
+    // P4 — monitoramento por polling: roda a cada MONITOR_INTERVAL_MIN (padrão 60min;
+    // a janela por processo é MONITOR_INTERVAL_HORAS, padrão 6h). Nunca "tempo real".
+    const monitorMs = Number(process.env.MONITOR_INTERVAL_MIN ?? 60) * 60_000;
+    if (Date.now() - ultimoMonitor >= monitorMs) {
+      ultimoMonitor = Date.now();
+      const m = await rodarMonitoramento({
+        listar: async (limite) => {
+          const rows = await db.legalCase.findMany({
+            where: { alertasAtivos: true },
+            orderBy: [{ ultimaVerificacao: "asc" }],
+            take: limite,
+          });
+          return rows
+            .filter((r) => r.alias)
+            .map<CasoMonitorado>((r) => ({
+              id: r.id,
+              userId: r.userId,
+              cnj: r.cnj,
+              alias: r.alias ?? "",
+              movimentosCount: r.movimentosCount,
+              ultimoMovimentoNome: (r.ultimoMovimento as { nome?: string } | null)?.nome ?? null,
+              ultimoMovimentoData: (r.ultimoMovimento as { dataHora?: string } | null)?.dataHora ?? null,
+              alertasAtivos: r.alertasAtivos,
+              ultimaVerificacao: r.ultimaVerificacao,
+            }));
+        },
+        buscarDoc: (alias, numeroProcesso) => fetchProcessos(alias, { numeroProcesso }),
+        marcarVerificado: async (casoId, iso) => {
+          await db.legalCase.update({ where: { id: casoId }, data: { ultimaVerificacao: iso } });
+        },
+        emitirAlerta: async (nov) => {
+          const dedupeKey = `${nov.userId}:novo_movimento:${nov.cnj}:${(nov.ultimoData ?? "").slice(0, 10)}`;
+          await db.alertEvent
+            .create({
+              data: {
+                userId: nov.userId,
+                topic: "novo_movimento",
+                refId: nov.cnj,
+                channel: "telegram",
+                status: "queued",
+                payload: { kind: "novo_movimento", detail: nov.detail },
+                dedupeKey,
+                createdAt: new Date().toISOString(),
+              },
+            })
+            .catch(() => undefined); // dedupe/unique: já existe → não duplica
+        },
+      });
+      console.log(`[worker] monitor: verificados=${m.verificados} novidades=${m.comNovidade} alertas=${m.alertas} falhas=${m.falhas} pulados=${m.pulados}`);
+      await db.opsEvent
+        .create({ data: { source: "worker", kind: "monitor_ciclo", service: "worker", ok: m.falhas === 0, detail: { ...m } } })
+        .catch(() => undefined);
     }
     // G2: expurgo de retenção a cada 100 ciclos (probes 7d, eventos 30d)
     cycles += 1;

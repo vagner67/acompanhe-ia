@@ -124,6 +124,15 @@ export function api(token: string) {
     processoDetalhesLote: (cnjs: string[]) =>
       get<{ itens: DetalheTercero[]; rodape: string }>(`/api/processos/detalhes-lote?cnjs=${encodeURIComponent(cnjs.join(","))}`),
     processoBuscarWeb: (pergunta: string) => post<RespostaBuscador>("/api/processos/buscar-web", { pergunta }),
+    processoFontes: () => get<CatalogoFontes>("/api/processos/fontes"),
+    processoBuscarIndice: (q: string, filtros?: { uf?: string; tribunal?: string; ano?: string }) =>
+      get<BuscaIndiceResp>(
+        `/api/processos/indice?q=${encodeURIComponent(q)}` +
+          (filtros?.uf ? `&uf=${encodeURIComponent(filtros.uf)}` : "") +
+          (filtros?.tribunal ? `&tribunal=${encodeURIComponent(filtros.tribunal)}` : "") +
+          (filtros?.ano ? `&ano=${encodeURIComponent(filtros.ano)}` : ""),
+      ),
+    processoRisco: (q: string) => post<AvaliacaoRiscoResp>("/api/processos/risco", { q }),
     juridicoConsulta: (cnj: string, uf: string) => post<{ id: string; consolidado?: boolean }>("/api/juridico/consultas", { cnj, uf }),
     // —— Empréstimos ——
     feed: () => get<{ items: LoanRequestDto[] }>("/api/feed/emprestimos"),
@@ -252,6 +261,61 @@ export interface RespostaBuscador {
   resposta: string;
   fontes: FonteWebDto[];
   diagnostico: { backend: string; status: number; bytes: number; motivo?: string }[];
+  rodape: string;
+}
+export interface FonteInfoDto {
+  id: string;
+  nome: string;
+  tipo: "indice" | "datajud" | "esaj" | "djen";
+  capacidades: string[];
+  ufs: string[] | null;
+  estado: "ativo" | "indisponivel" | "planejado";
+  verificadoEm: string;
+  limitacao?: string;
+}
+export interface CatalogoFontes {
+  fontes: FonteInfoDto[];
+  cobertura: {
+    numero: { fontes: number; tribunais: number };
+    nome: { fontes: string[]; ufs: string[] };
+    documento: { fontes: string[]; ufs: string[] };
+  };
+  rodape: string;
+}
+export interface ItemIndice {
+  processo: {
+    numeroCnj: string;
+    tribunal: string;
+    uf: string | null;
+    classe: string | null;
+    assunto: string | null;
+    orgaoJulgador: string | null;
+    dataAjuizamento: string | null;
+    ultimoMovimentoNome: string | null;
+    ultimoMovimentoData: string | null;
+    fonte: string;
+    atualizadoEm: string;
+  };
+  score: number;
+  motivo: string;
+  motivoLegivel: string;
+  parteEncontrada: string | null;
+}
+export interface BuscaIndiceResp {
+  tipo: "nome" | "cpf" | "cnpj" | "cnj";
+  itens: ItemIndice[];
+  facetas: { tribunais: Array<{ valor: string; total: number }>; anos: Array<{ valor: string; total: number }>; ufs: Array<{ valor: string; total: number }> };
+  totalNoIndice: number;
+  advertencia?: string;
+  rodape: string;
+}
+export interface AvaliacaoRiscoResp {
+  criticidade: number;
+  faixa: "baixo" | "medio" | "alto" | "critico";
+  justificativas: Array<{ regra: string; criticidade: number; motivo: string; processo: string | null }>;
+  considerados: number;
+  totalProcessos: number;
+  versaoRegras: string;
   rodape: string;
 }
 export interface ProcessoTercero {

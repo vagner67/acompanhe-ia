@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { XP } from "@acompanhe/shared";
-import { api, adminApi, type DetalheTercero, type FonteWebDto, type Gamificacao, type GastoDto, type LegalEventDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type ProcessoTercero, type ResultadoEsaj, type StatusAssinatura } from "./api2";
+import { api, adminApi, type AvaliacaoRiscoResp, type BuscaIndiceResp, type CatalogoFontes, type DetalheTercero, type FonteWebDto, type Gamificacao, type GastoDto, type LegalEventDto, type LoanMatchDto, type LoanRequestDto, type NotaDto, type PlanoDto, type ProcessoTercero, type ResultadoEsaj, type StatusAssinatura } from "./api2";
 
 type Api = ReturnType<typeof api>;
 interface P {
@@ -396,6 +396,10 @@ export function JuridicoScreen({ a, toast }: P) {
   const [fontesInfo, setFontesInfo] = useState<ResultadoEsaj[]>([]);
   const [rodapeTerc, setRodapeTerc] = useState("");
   const [advertenciaBusca, setAdvertenciaBusca] = useState("");
+  // —— índice próprio + risco (plano-refatoracao §6.2/§6.6) ——
+  const [indiceResp, setIndiceResp] = useState<BuscaIndiceResp | null>(null);
+  const [risco, setRisco] = useState<AvaliacaoRiscoResp | null>(null);
+  const [catalogo, setCatalogo] = useState<CatalogoFontes | null>(null);
   const [detalhesMap, setDetalhesMap] = useState<Record<string, DetalheTercero>>({});
   const [progresso, setProgresso] = useState<{ ativo: boolean; feitos: number; total: number; rotulo: string }>({
     ativo: false,
@@ -413,6 +417,11 @@ export function JuridicoScreen({ a, toast }: P) {
       return null;
     }
   };
+
+  useEffect(() => {
+    a.processoFontes().then(setCatalogo).catch(() => void 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const carregarCaso = (cnjAlvo: string) =>
     a
@@ -570,6 +579,35 @@ export function JuridicoScreen({ a, toast }: P) {
     }
   };
 
+  const buscarIndice = async () => {
+    const texto = cnj.trim();
+    if (!texto) return;
+    avancar(1, 2, "consultando o índice próprio (Postgres)…");
+    try {
+      const r = await a.processoBuscarIndice(texto, uf.toUpperCase() === "TODAS" ? {} : { uf: uf.toLowerCase() });
+      setIndiceResp(r);
+      setRisco(null);
+      avancar(2, 2, `índice: ${r.itens.length} resultado(s) de ${r.totalNoIndice} processo(s) indexados`);
+      if (!r.itens.length) toast("índice sem resultado — use 🔎 Buscar (fontes ao vivo) ou 🔬 Pesquisa profunda");
+    } catch (e) {
+      toast(`⚠ ${(e as Error).message}`);
+    } finally {
+      setProgresso({ ativo: false, feitos: 0, total: 0, rotulo: "" });
+    }
+  };
+
+  const avaliarCriticidade = async () => {
+    const texto = cnj.trim();
+    if (!texto) return toast("informe nome, CPF ou número para avaliar a criticidade");
+    try {
+      const r = await a.processoRisco(texto);
+      setRisco(r);
+      toast(`🎯 criticidade ${r.criticidade}/10 (${r.faixa}) sobre ${r.considerados} processo(s)`);
+    } catch (e) {
+      toast(`⚠ ${(e as Error).message}`);
+    }
+  };
+
   const acoes = [
     {
       rotulo: "🔎 Buscar",
@@ -582,6 +620,18 @@ export function JuridicoScreen({ a, toast }: P) {
       cls: "btn ghost",
       titulo: "Nome/CPF/CNPJ → todas as fontes verificadas, todas as páginas + cruzamento DataJud",
       fn: pesquisaProfunda,
+    },
+    {
+      rotulo: "🗂️ Buscar no índice",
+      cls: "btn ghost",
+      titulo: "Buscar no índice próprio (nomes/processos já coletados) — rápido, com grau de certeza do vínculo",
+      fn: buscarIndice,
+    },
+    {
+      rotulo: "🎯 Criticidade",
+      cls: "btn ghost",
+      titulo: "Motor determinístico: score 0–10 com justificativas auditáveis por processo",
+      fn: avaliarCriticidade,
     },
     {
       rotulo: "⚖️ Acompanhar",
@@ -713,6 +763,109 @@ export function JuridicoScreen({ a, toast }: P) {
           </p>
         )}
       </div>
+
+      {catalogo && (
+        <div className="card">
+          <h3>🗺️ Cobertura real das fontes</h3>
+          <p className="mut" style={{ fontSize: "0.8rem", marginTop: 0 }}>
+            Nº de processo: <strong>{catalogo.cobertura.numero.tribunais} tribunais</strong> (DataJud/CNJ) · Nome/CPF/CNPJ:{" "}
+            <strong>{catalogo.cobertura.nome.ufs.map((u) => u.toUpperCase()).join(", ")}</strong> (e-SAJ) · Índice próprio:{" "}
+            {catalogo.fontes.find((f) => f.id === "indice")?.estado === "ativo" ? "ativo" : "inativo"}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {catalogo.fontes.map((f) => (
+              <div key={f.id} className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap", background: "var(--surface-2)", border: "1px solid var(--line-hair)", borderRadius: 10, padding: "6px 10px" }}>
+                <div>
+                  <div style={{ fontSize: "0.82rem" }}>{f.nome}</div>
+                  {f.limitacao && <div className="mut" style={{ fontSize: "0.72rem" }}>{f.limitacao}</div>}
+                </div>
+                <span className="tag" style={{ borderColor: f.estado === "ativo" ? "var(--good)" : "var(--amber, #b45309)", fontSize: "0.7rem" }}>
+                  {f.estado === "ativo" ? "verificado" : f.estado} · {f.verificadoEm}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {risco && (
+        <div className="card">
+          <h3>🎯 Criticidade (motor determinístico)</h3>
+          <p style={{ margin: "4px 0 8px" }}>
+            <strong style={{ fontSize: "1.4rem" }}>{risco.criticidade}/10</strong>{" "}
+            <span className={`tag ${risco.faixa === "baixo" ? "" : risco.faixa === "medio" ? "" : "green"}`}>{risco.faixa}</span>{" "}
+            <span className="mut" style={{ fontSize: "0.75rem" }}>
+              · {risco.considerados} processo(s) considerados · regras {risco.versaoRegras}
+            </span>
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {risco.justificativas.length === 0 && <p className="mut" style={{ fontSize: "0.8rem" }}>Nenhuma regra de risco foi acionada.</p>}
+            {risco.justificativas.map((j, i) => (
+              <div key={`${j.regra}-${i}`} style={{ background: "var(--surface-2)", border: "1px solid var(--line-hair)", borderRadius: 10, padding: "6px 10px", fontSize: "0.8rem" }}>
+                <span className="mono" style={{ fontSize: "0.7rem", opacity: 0.8 }}>+{j.criticidade} · {j.regra}</span>
+                <div>{j.motivo}</div>
+                {j.processo && <div className="mut mono" style={{ fontSize: "0.7rem" }}>{j.processo}</div>}
+              </div>
+            ))}
+          </div>
+          <p className="mut" style={{ fontSize: "0.72rem", marginTop: 8 }}>{risco.rodape}</p>
+        </div>
+      )}
+
+      {indiceResp && (
+        <div className="card">
+          <h3>🗂️ Índice próprio — {indiceResp.itens.length} resultado(s)</h3>
+          <p className="mut" style={{ fontSize: "0.78rem", marginTop: 0 }}>
+            {indiceResp.totalNoIndice} processo(s) indexados · cada item mostra o <strong>grau de certeza do vínculo</strong>
+          </p>
+          {indiceResp.facetas.tribunais.length > 0 && (
+            <div className="row" style={{ flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {indiceResp.facetas.tribunais.map((t) => (
+                <span key={t.valor} className="tag" style={{ fontSize: "0.72rem" }}>{t.valor} ({t.total})</span>
+              ))}
+              {indiceResp.facetas.anos.slice(0, 4).map((an) => (
+                <span key={an.valor} className="tag" style={{ fontSize: "0.72rem" }}>{an.valor} ({an.total})</span>
+              ))}
+            </div>
+          )}
+          {indiceResp.advertencia && (
+            <p className="mut" style={{ fontSize: "0.78rem", color: "var(--amber, #b45309)" }}>⚠ {indiceResp.advertencia}</p>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {indiceResp.itens.map((it) => (
+              <div key={it.processo.numeroCnj} style={{ background: "var(--surface-2)", border: "1px solid var(--line-hair)", borderRadius: 12, padding: "10px 12px" }}>
+                <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+                  <div>
+                    <div className="mono" style={{ fontSize: "0.82rem" }}>{it.processo.numeroCnj}</div>
+                    {it.parteEncontrada && <div style={{ fontSize: "0.84rem" }}>{it.parteEncontrada}</div>}
+                    <div className="mut" style={{ fontSize: "0.75rem" }}>
+                      {[it.processo.classe, it.processo.assunto].filter(Boolean).join(" · ") || "classe não informada"}
+                      {it.processo.orgaoJulgador ? ` · ${it.processo.orgaoJulgador}` : ""}
+                    </div>
+                    <div className="mut" style={{ fontSize: "0.72rem" }}>
+                      vínculo: {it.motivoLegivel} · atualizado em {fmtDataBR(it.processo.atualizadoEm)} · fonte {it.processo.fonte}
+                    </div>
+                  </div>
+                  <div className="row" style={{ gap: 6, alignItems: "center" }}>
+                    <span className="tag green" title="grau de certeza do vínculo (0–1)">{Math.round(it.score * 100)}%</span>
+                    <button
+                      className="btn"
+                      style={{ padding: "6px 10px", fontSize: "0.78rem" }}
+                      onClick={async () => {
+                        setCnj(it.processo.numeroCnj);
+                        await carregarCaso(it.processo.numeroCnj);
+                      }}
+                    >
+                      abrir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mut" style={{ fontSize: "0.72rem", marginTop: 10 }}>{indiceResp.rodape}</p>
+        </div>
+      )}
 
       {(terceiros.length > 0 || fontesInfo.length > 0) && (
         <div className="card">

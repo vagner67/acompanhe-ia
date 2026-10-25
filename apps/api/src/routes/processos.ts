@@ -9,13 +9,17 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { makeJuridicoService, RODAPE_INFORMATIVO, type LegalStore } from "../juridico/service.js";
-import { isValidCnj, aliasFromTribunal, aliasCandidatesFromCnj, parseCnj, formatCnj } from "../juridico/cnj.js";
+import { isValidCnj, aliasFromTribunal, aliasCandidatesFromCnj, parseCnj, formatCnj, formatarNumero } from "../juridico/cnj.js";
 import { detectarConsulta } from "../juridico/deteccao.js";
 import { mapDoc } from "../juridico/service.js";
 import { responderPergunta, resumoProcesso } from "../juridico/assistente.js";
 import { alertDedupeKey, type AlertSink } from "../jobs/dispatcher.js";
 import type { LegalEventDto } from "../juridico/types.js";
 import type { DatajudClientOpts } from "../juridico/datajud.js";
+import { INGEST_LOTE } from "../juridico/limites.js";
+import { avaliarRisco } from "../juridico/risco.js";
+import { cobertura, FONTES_INFO } from "../juridico/fontes.js";
+import { ranquear, type IndiceStore } from "../juridico/indice.js";
 import type { JwtService } from "../security/jwt.js";
 import type { Entitlements } from "../entitlements.js";
 
@@ -32,6 +36,10 @@ export interface ProcessosDeps {
   datajudOpts?: DatajudClientOpts;
   /** RF-B04 — alertas de movimentação (dispatcher → worker → Telegram). */
   alertSink?: AlertSink;
+  /** Índice próprio (plano-refatoracao §6.2) — base do buscador do Jurídico. */
+  indice?: IndiceStore;
+  /** Token de serviço para rotas de ingestão em lote (job/ops). */
+  serviceToken?: () => string | null;
   now?: () => Date;
 }
 
@@ -256,6 +264,169 @@ export function processosRoutes(deps: ProcessosDeps) {
         ...(deps.datajudOpts?.fetchImpl ? { fetchImpl: deps.datajudOpts.fetchImpl } : {}),
       });
       return reply.send({ ...r, rodape: RODAPE_INFORMATIVO });
+    });
+
+    // ── Catálogo de fontes: cobertura REAL exibida na tela (padrão P7) ──
+    app.get("/api/processos/fontes", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      return reply.send({
+        fontes: FONTES_INFO,
+        cobertura: cobertura(),
+        rodape: RODAPE_INFORMATIVO,
+        rule: "catálogo = cobertura verificada; nada anunciado sem verificadoEm",
+      });
+    });
+
+    // ── Busca no ÍNDICE PRÓPRIO (pipeline P1/P2/P3 do plano-refatoracao §6.2–6.3) ──
+    app.get("/api/processos/indice", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      const q = z
+        .object({
+          q: z.string().min(3).max(120),
+          uf: z.string().min(2).max(2).optional(),
+          tribunal: z.string().min(2).max(40).optional(),
+          ano: z.string().length(4).optional(),
+        })
+        .parse(req.query ?? {});
+      if (!deps.indice) return reply.code(503).send({ error: "índice indisponível neste ambiente", rule: "indice" });
+      const det = detectarConsulta(decodeURIComponent(q.q));
+      if (det.erro) return reply.code(422).send({ error: det.erro, rule: "deteccao/DV real" });
+      const filtros = {
+        ...(q.uf ? { uf: q.uf.toLowerCase() } : {}),
+        ...(q.tribunal ? { tribunal: q.tribunal.toLowerCase() } : {}),
+        ...(q.ano ? { ano: q.ano } : {}),
+        limite: 30,
+      };
+      const busca =
+        det.tipo === "cnj"
+          ? { numero: formatarNumero(det.valor) ?? det.valor, ...filtros }
+          : det.tipo === "cpf" || det.tipo === "cnpj"
+            ? { documento: det.valor, ...filtros }
+            : { nome: det.valor, ...filtros };
+      const brutos = await deps.indice.buscar(busca);
+      const itens = ranquear(brutos, busca);
+      const facetas = await deps.indice.facetas(busca);
+      const total = await deps.indice.total();
+      const advertencias: string[] = [];
+      if (det.tipo !== "cnj") {
+        const soNome = itens.every((i) => i.motivo === "sem_documento");
+        if (itens.length > 0 && soNome) {
+          advertencias.push(
+            "os vínculos abaixo foram feitos por NOME — a fonte não informou o documento, então pode haver homônimos; o grau de certeza de cada item está indicado",
+          );
+        }
+        if (itens.length === 0) {
+          advertencias.push(
+            "o índice só contém nomes que as fontes públicas publicaram ou processos que você acompanha — busque também nas fontes ao vivo (🔎 Buscar / 🔬 Pesquisa profunda)",
+          );
+        }
+      }
+      return reply.send({
+        tipo: det.tipo,
+        itens,
+        facetas,
+        totalNoIndice: total,
+        ...(advertencias.length ? { advertencia: advertencias.join(" · ") } : {}),
+        rodape: RODAPE_INFORMATIVO,
+        rule: "índice próprio: vínculo com score e motivo, nunca afirmação sem base",
+      });
+    });
+
+    // ── Ingestão do índice em lote (job/ops) — protegida por token de serviço ──
+    app.post("/api/processos/indice/ingest", async (req: FastifyRequest, reply: FastifyReply) => {
+      const esperado = deps.serviceToken?.() ?? process.env.SERVICE_TOKEN ?? null;
+      const recebido = (req.headers["x-service-token"] as string | undefined) ?? "";
+      if (!esperado || recebido !== esperado) return reply.code(401).send({ error: "token de serviço inválido" });
+      if (!deps.indice) return reply.code(503).send({ error: "índice indisponível neste ambiente" });
+      const { numeros } = z
+        .object({ numeros: z.array(z.string().min(7).max(30)).min(INGEST_LOTE.min).max(INGEST_LOTE.max) })
+        .parse(req.body ?? {});
+      const { ingerirPorNumeros } = await import("../juridico/ingestao.js");
+      const fetchProcessos = deps.datajud ?? (await import("../juridico/datajud.js")).fetchProcessos;
+      const r = await ingerirPorNumeros(
+        numeros,
+        { datajud: fetchProcessos, ...(deps.datajudOpts ? { datajudOpts: deps.datajudOpts } : {}) },
+        deps.now ? deps.now() : new Date(),
+      );
+      const gravados = await deps.indice.upsertMuitos(r.ingeridos);
+      return reply.send({
+        gravados,
+        naoEncontrados: r.naoEncontrados,
+        invalidos: r.invalidos,
+        totalNoIndice: await deps.indice.total(),
+      });
+    });
+
+    // ── Motor de risco determinístico (padrão "motor de decisão", §6.6) ──
+    app.post("/api/processos/risco", async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = await requireUser(req);
+      if (!userId) return reply.code(401).send({ error: "não autenticado" });
+      if (!(await deps.entitlements.isEntitled(userId, PLANS_WITH_JURIDICA))) {
+        return reply.code(403).send({ error: "plano Consulta Jurídica ativo é necessário", rule: "v2/08 §9.5" });
+      }
+      if (!deps.indice) return reply.code(503).send({ error: "índice indisponível neste ambiente" });
+      const body = z
+        .object({ q: z.string().min(3).max(120).optional(), cnjs: z.array(z.string().min(7).max(30)).max(50).optional() })
+        .parse(req.body ?? {});
+      if (!body.q && !body.cnjs) return reply.code(422).send({ error: "informe q (nome/CPF/número) ou cnjs", rule: "risco" });
+      const coletados: Array<{
+        numeroCnj: string;
+        classe: string | null;
+        status: string | null;
+        valorCausa: number | null;
+        dataAjuizamento: string | null;
+        polo: string | null;
+        nivelSigilo: number | null;
+      }> = [];
+      if (body.cnjs) {
+        for (const cnj of body.cnjs) {
+          const [p] = await deps.indice.buscar({ numero: cnj, limite: 1 });
+          if (!p) continue;
+          coletados.push({
+            numeroCnj: p.numeroCnj,
+            classe: p.classe,
+            status: p.status,
+            valorCausa: p.valorCausa,
+            dataAjuizamento: p.dataAjuizamento,
+            polo: p.partes[0]?.polo ?? null,
+            nivelSigilo: null,
+          });
+        }
+      } else if (body.q) {
+        const det = detectarConsulta(body.q);
+        if (det.erro) return reply.code(422).send({ error: det.erro, rule: "deteccao/DV real" });
+        const busca =
+          det.tipo === "cnj"
+            ? { numero: formatarNumero(det.valor) ?? det.valor, limite: 50 }
+            : det.tipo === "cpf" || det.tipo === "cnpj"
+              ? { documento: det.valor, limite: 50 }
+              : { nome: det.valor, limite: 50 };
+        const itens = ranquear(await deps.indice.buscar(busca), busca);
+        for (const it of itens) {
+          const p = it.processo;
+          coletados.push({
+            numeroCnj: p.numeroCnj,
+            classe: p.classe,
+            status: p.status,
+            valorCausa: p.valorCausa,
+            dataAjuizamento: p.dataAjuizamento,
+            polo: it.parteEncontrada ? (p.partes.find((x) => x.nome === it.parteEncontrada)?.polo ?? null) : null,
+            nivelSigilo: null,
+          });
+        }
+      }
+      const avaliacao = avaliarRisco(coletados, deps.now ? deps.now() : new Date());
+      return reply.send({
+        ...avaliacao,
+        considerados: coletados.length,
+        rodape: RODAPE_INFORMATIVO,
+        rule: "score determinístico e auditável — cada ponto tem regra e processo de origem",
+      });
     });
 
     // ── Perguntar ao assistente (grounded) — botão 💬 Explicar / chat ──
