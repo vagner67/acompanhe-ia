@@ -242,7 +242,7 @@ export function opsRoutes(deps: {
         ops.syncRunList(20),
         ops.tableStats(),
       ]);
-      return reply.send({ alertas, deadletter, syncRuns, tabelas, aviso: syncRuns.length === 0 ? "SyncRun sem escritor: não existe ingestão agendada no código (scheduler externo) — tabela real vazia" : null });
+      return reply.send({ alertas, deadletter, syncRuns, tabelas, aviso: syncRuns.length === 0 ? "SyncRun vazio: nenhum coletor foi medido ainda (o núcleo escreve a cada ciclo — ver aba Fontes)" : null });
     });
 
     app.get("/v1/admin/ops/logs", async (req, reply) => {

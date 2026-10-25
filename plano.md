@@ -305,3 +305,24 @@ Achados que viraram correção de código neste mesmo dia:
 2. `anota`, `pagamentos` e `operacao` não têm coletor externo — não há o que medir ainda.
 3. Sem chave de IA no ambiente, a parte "IA de buscador interpretando" roda em modo determinístico; ligar `AI_PROVIDER=tavily` + `AI_API_KEY` ativa o caminho completo sem mudar código.
 4. 91 tribunais → 4 e-SAJ abertos + DataJud + DJEN. Os demais portais exigem captcha/credencial; o núcleo declara isso em vez de simular cobertura.
+
+### 9.7 Prova em produção (25/10, 05:07–05:09 UTC)
+
+Depois do deploy do commit `a32cc52` (`https://acompanhe.onrender.com`):
+
+- `GET /v1/admin/nucleo/catalogo` → **12 coletores** em 4 módulos.
+- O agendador contínuo rodou **sozinho 30 s após o boot** e varreu todos os coletores;
+  `GET /v1/admin/ops/queues` passou a devolver `syncRuns` reais e o aviso
+  “SyncRun sem escritor” **desapareceu**: `datajud 2 itens`, `osint-crtsh 81`,
+  `osint-rdap 1`, `osint-wayback 1`, `dou-busca 0 (502 do in.gov.br)`.
+- `POST /v1/admin/nucleo/ciclo` (200 em **8,6 s**) mediu PNCP (50 itens) e wayback;
+  `osint-crtsh` deu timeout no ciclo seguinte e o disjuntor o colocou em recuo de
+  15 min com motivo — sem martelar o host.
+- `GET /v1/admin/nucleo/coletor/osint-crtsh` mostrou a série: 81 itens em 302–765 ms
+  às 05:08:18–21, depois `timeout` e `502` → o núcleo mediu um canário, ele também
+  falhou e a proposta foi **rejeitada** ("nenhum candidato respondeu — nada aplicado").
+
+O e-SAJ de SP, consultado com nome curto ("João Carlos"), responde “foram encontrados
+muitos processos, refine sua busca” — o relatório já expõe isso como estado `refinar`,
+não como “nenhum processo”.
+
