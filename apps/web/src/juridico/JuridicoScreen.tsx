@@ -93,15 +93,25 @@ export function JuridicoScreen({ a, toast }: Props) {
   const [catalogo, setCatalogo] = useState<CatalogoFontes | null>(null);
   const [meus, setMeus] = useState<MeuProcesso[]>([]);
 
+  // "Acompanhados" recarrega em toda volta ao estado de busca: o primeiro fetch
+  // pode falhar em cold start e não havia nova tentativa (visto em produção).
+  useEffect(() => {
+    if (fase !== "buscar") return;
+    let vivo = true;
+    a.processoMeus()
+      .then((r) => vivo && setMeus(r.processos ?? []))
+      .catch(() => void 0);
+    return () => {
+      vivo = false;
+    };
+  }, [fase === "buscar", a]);
+
   const tipo = detectarTipo(consulta);
   const lista = useMemo(() => unificarResultados(indice?.itens, terceiros, detalhes), [indice, terceiros, detalhes]);
   const contagens = useMemo(() => contarPorFonte(fontes), [fontes]);
 
   useEffect(() => {
     a.processoFontes().then(setCatalogo).catch(() => void 0);
-    a.processoMeus()
-      .then((r) => setMeus(r.processos ?? []))
-      .catch(() => void 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -350,7 +360,7 @@ export function JuridicoScreen({ a, toast }: Props) {
               onKeyDown={(e) => {
                 if (e.key === "Enter") void buscar();
               }}
-              placeholder="Buscar processo, nome ou CPF"
+              placeholder="Nome, CPF ou nº"
               aria-label="Nome, CPF/CNPJ ou número do processo"
               inputMode={tipo === "nome" ? "text" : "numeric"}
               enterKeyHint="search"
