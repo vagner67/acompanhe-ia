@@ -55,7 +55,8 @@ export function isValidCnj(numero: string): boolean {
 const ALIAS: Record<string, Record<string, string>> = {
   "8": {
     "11": "tjmt", // verificado vivo 23/10/2026 (fixture tjmt)
-    "26": "tjsp", // padrao CNJ publico: 8.26 = SP
+    "02": "tjal", // verificado vivo 24/10/2026: api_publica_tjal 200 + hits (CNJ real 0764101-97.2025.8.02.0001)
+    "26": "tjsp", // padrao CNJ publico: 8.26 = SP; api_publica_tjsp 200 verificado vivo 24/10/2026
     "19": "tjrj", // 8.19 = RJ
     "13": "tjmg", // 8.13 = MG
     "05": "tjba", // 8.05 = BA
