@@ -387,6 +387,26 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
     }
   }
 
+  // 6b) não repetir o que já foi revertido. Sem isto, o ajuste revertido
+  // voltava na proposta seguinte e oscilava para sempre (medido em produção:
+  // osint-dominio promovido 8000→12000 ms e revertido no ciclo seguinte, em
+  // loop). Memória do próprio histórico de ações, sem parâmetro novo.
+  // atenção ao snapshot: numa ação `revertida`, `paramsAntes` é o ajuste que
+  // degradou e `paramsDepois` é o que voltou a valer. O candidato a bloquear é
+  // o que degradou (`paramsAntes`).
+  const jaRevertidos = new Set(
+    acoes.filter((a) => a.resultado === "revertida" && a.paramsAntes).map((a) => chaveParams(a.paramsAntes!)),
+  );
+  const bloqueados = candidatos.filter((c) => jaRevertidos.has(chaveParams(c.params)));
+  if (bloqueados.length > 0) {
+    const mantidos = candidatos.filter((c) => !jaRevertidos.has(chaveParams(c.params)));
+    candidatos.splice(0, candidatos.length, ...mantidos);
+  }
+  const notaBloqueio =
+    bloqueados.length > 0
+      ? ` · ${bloqueados.length} candidato(s) ignorado(s) por já ter(em) sido revertido(s) antes`
+      : "";
+
   const vizinhos: VizinhoMedido[] = [];
   let melhor: { params: Params; score: number; porque: string } | null = null;
   for (const [i, cand] of candidatos.entries()) {
@@ -478,7 +498,7 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
       acao: `mantido ${JSON.stringify(estado.params)}`,
       evidencia: evidenciaJson(diag, vigente.score, { incidente: incidente.motivo }),
       resultado: "mantida",
-      motivo: recusaDesativar ?? diag.descartado ?? diag.causa,
+      motivo: `${recusaDesativar ?? diag.descartado ?? diag.causa}${notaBloqueio}`,
       versaoAntes: estado.versao,
       versaoDepois: novo.versao,
       paramsAntes: estado.params,
@@ -494,12 +514,17 @@ export async function cicloColetor(coletor: Coletor, opts: OpcoesNucleo): Promis
     score: vigente.score,
     scoreAnterior: estado.scoreAtual,
     versao: novo.versao,
-    motivo: recusaDesativar ?? diag.causa,
+    motivo: `${recusaDesativar ?? diag.causa}${notaBloqueio}`,
     diagnostico: diag,
     vizinhos,
     resultado: vigente.r,
     ms: Date.now() - t0,
   };
+}
+
+/** chave canônica de params (ordem de chaves não importa, nem no JSON do banco). */
+function chaveParams(p: Params): string {
+  return JSON.stringify(Object.keys(p).sort().map((k) => [k, p[k]]));
 }
 
 function numeroFinito(n: number): boolean {

@@ -484,6 +484,48 @@ describe("Motor: mede, promove com canário, reverte e desliga", () => {
     expect((await store.obter(coletor.id))!.versao).toBe(3);
   });
 
+  it("candidato já revertido não é reproposto (fim da oscilação promover/reverter)", async () => {
+    const store = new InMemoryNucleoStore();
+    // histórico real: a versão 12000 ms já foi aplicada e revertida antes
+    await store.salvar({ ...estadoInicial("teste-motor", { timeoutMs: 8_000 }), versao: 3 });
+    await store.registrarAcao({
+      coletorId: "teste-motor",
+      ts: new Date(Date.UTC(2026, 0, 1)).toISOString(),
+      origem: "regras",
+      tipo: "ajuste-parametro",
+      acao: "v1→v2",
+      evidencia: JSON.stringify({ score: 78 }),
+      resultado: "aplicada",
+      motivo: "promoção",
+      versaoAntes: 1,
+      versaoDepois: 2,
+      paramsAntes: { timeoutMs: 8_000 },
+      paramsDepois: { timeoutMs: 12_000 },
+    });
+    await store.registrarAcao({
+      coletorId: "teste-motor",
+      ts: new Date(Date.UTC(2026, 0, 2)).toISOString(),
+      origem: "regras",
+      tipo: "reverter",
+      acao: "revertido",
+      evidencia: JSON.stringify({ scoreAgora: 56 }),
+      resultado: "revertida",
+      motivo: "ajuste anterior degradou a coleta",
+      versaoAntes: 2,
+      versaoDepois: 3,
+      paramsAntes: { timeoutMs: 12_000 },
+      paramsDepois: { timeoutMs: 8_000 },
+    });
+    const coletor = coletorDeTeste({
+      executar: (p) => (Number(p["timeoutMs"]) === 12_000 ? ok(20) : ok(1)), // o revertido pontua mais
+      espaco: { timeoutMs: { tipo: "numero", min: 5_000, max: 20_000, passo: 4_000 } },
+    });
+    const r = await cicloColetor(coletor, { store, pausaMs: 0, usarIA: false });
+    expect(r.acao).not.toBe("promovida");
+    expect((await store.obter(coletor.id))!.params["timeoutMs"]).toBe(8_000);
+    expect(r.motivo).toMatch(/já ter\(em\) sido revertido/);
+  });
+
   it("rollback roda UMA vez: o ciclo seguinte não reencontra a mesma promoção antiga", async () => {
     const store = new InMemoryNucleoStore();
     await store.salvar({ ...estadoInicial("teste-motor", { timeoutMs: 20_000 }), versao: 2 });

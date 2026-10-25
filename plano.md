@@ -414,3 +414,11 @@ O e-SAJ/SP ficou OFF tendo coletado 25 itens horas antes. Regra nova no motor:
 
 Testes novos: `IA pedindo desativar por 'termo amplo' NÃO desliga a fonte` e
 `desativar proposto pela IA exige corroboração: 1ª falha mantém, 2ª desliga`. Placar: **514 ✔ / 1 skip**.
+
+**4ª correção — fim da oscilação promover/reverter:** `osint-dominio` era promovido
+(8000→12000 ms, score 78–79) e revertido no ciclo seguinte (56–68 < promoção − ε), em loop:
+o candidato revertido voltava na proposta seguinte. Agora o motor lê o próprio histórico de
+ações e **ignora candidato que já foi revertido** (snapshot correto: numa ação `revertida`,
+`paramsAntes` é o ajuste que degradou), registrando no motivo
+`· N candidato(s) ignorado(s) por já ter(em) sido revertido(s) antes`. Teste:
+`candidato já revertido não é reproposto`. Placar: **515 ✔ / 1 skip**.
