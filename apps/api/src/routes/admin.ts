@@ -339,7 +339,11 @@ export function adminRoutes(deps: {
       if (!model) return reply.code(404).send({ error: "modelo indisponível", tabela, modelo: MODELOS[tabela] });
       const limite = Math.min(Math.max(Number((req.query as { limite?: string }).limite ?? 50), 1), 50); // 1..50 (visor)
       const rows = await model.findMany({ take: limite });
-      return reply.send({ tabela, rows, rule: "visor somente-leitura · 50 linhas" });
+      // `id` é BigInt nas tabelas novas: sem converter, o JSON.stringify estoura
+      // (medido em produção: 500 em FontePerfil/ColetorMetrica/SyncRun).
+      const json = (x: unknown) =>
+        JSON.parse(JSON.stringify(x, (_k, v) => (typeof v === "bigint" ? v.toString() : v))) as unknown;
+      return reply.send({ tabela, rows: json(rows), rule: "visor somente-leitura · 50 linhas" });
     });
   };
 }
