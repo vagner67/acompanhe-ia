@@ -247,7 +247,7 @@ export interface FonteWebDto {
   trecho: string;
 }
 export interface RespostaBuscador {
-  provedor: "duckduckgo" | "tavily" | "perplexity" | "gemini";
+  provedor: "publico" | "tavily" | "perplexity" | "gemini";
   geradaPorIA: boolean;
   resposta: string;
   fontes: FonteWebDto[];

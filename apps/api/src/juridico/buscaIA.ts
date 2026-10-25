@@ -18,7 +18,7 @@
 import { buscarWebDetalhado, type DiagnosticoBusca, type FonteWeb } from "./buscaWeb.js";
 
 export interface RespostaBuscador {
-  provedor: "duckduckgo" | "tavily" | "perplexity" | "gemini";
+  provedor: "publico" | "tavily" | "perplexity" | "gemini";
   geradaPorIA: boolean;
   resposta: string;
   fontes: FonteWeb[];
@@ -27,20 +27,20 @@ export interface RespostaBuscador {
 }
 
 export function provedorConfigurado(env: Record<string, string | undefined> = process.env): {
-  provedor: "duckduckgo" | "tavily" | "perplexity" | "gemini";
+  provedor: "publico" | "tavily" | "perplexity" | "gemini";
   key: string | undefined;
 } {
   const key = env["AI_API_KEY"];
   const p = (env["AI_PROVIDER"] ?? "").toLowerCase();
   if (key && (p === "tavily" || p === "perplexity" || p === "gemini")) return { provedor: p, key };
-  return { provedor: "duckduckgo", key: undefined };
+  return { provedor: "publico", key: undefined };
 }
 
 function montarRespostaDasFontes(fontes: FonteWeb[], pergunta: string): string {
   if (fontes.length === 0) {
     return [
-      `A busca web pública não devolveu resultados para “${pergunta}” agora.`,
-      "O buscador gratuito (DuckDuckGo) limita consultas vindas de servidores — não é erro seu, e eu não invento resultados.",
+      `A busca pública não devolveu resultados para “${pergunta}” agora.`,
+      "Os buscadores gratuitos (DuckDuckGo e Wikipédia) não responderam a partir deste servidor — não é erro seu, e eu não invento resultados.",
       "Para a busca web com respostas garantidas e citações (modo IA), configure AI_PROVIDER=tavily e AI_API_KEY com a chave gratuita de tavily.com (1.000 consultas/mês, sem cartão).",
       "Enquanto isso, a busca por nº de processo (91 tribunais) e por nome/CPF nas fontes verificadas continua funcionando normalmente.",
     ].join("\n\n");
@@ -50,7 +50,7 @@ function montarRespostaDasFontes(fontes: FonteWeb[], pergunta: string): string {
     return `${i + 1}. ${f.titulo}${trecho}\n   ${f.url}`;
   });
   return [
-    `Resultados reais da web para “${pergunta}” (busca DuckDuckGo, sem resposta gerada por IA):`,
+    `Resultados reais da busca pública para “${pergunta}” (DDG e/ou Wikipédia, sem resposta gerada por IA):`,
     ...linhas,
     "",
     "Para ativar respostas geradas com citações (modo IA do buscador), configure AI_PROVIDER=tavily (1.000 consultas grátis/mês em tavily.com) e AI_API_KEY no ambiente.",
@@ -157,7 +157,7 @@ export async function responderComBuscador(
     // provedor pago falhou → cai nos resultados REAIS do DDG (nunca inventar)
   }
   return {
-    provedor: "duckduckgo",
+    provedor: "publico",
     geradaPorIA: false,
     resposta: montarRespostaDasFontes(fontesBase, pergunta),
     fontes: fontesBase,

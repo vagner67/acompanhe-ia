@@ -10,12 +10,13 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { buscarWeb, buscarWebDetalhado, ehAnomalia, parseDdgHtml } from "../src/juridico/buscaWeb.js";
+import { buscarWeb, buscarWebDetalhado, ehAnomalia, parseDdgHtml, parseWikipediaJson } from "../src/juridico/buscaWeb.js";
 import { responderComBuscador } from "../src/juridico/buscaIA.js";
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "ddg");
 const ddgHtml = readFileSync(join(dir, "busca-cpc.html"), "utf8");
 const anomalyHtml = readFileSync(join(dir, "anomalia-202.html"), "utf8");
+const wikiJson = readFileSync(join(dir, "wiki-busca-cpc.json"), "utf8");
 
 describe("DuckDuckGo HTML (fixture REAL de 24/10/2026)", () => {
   it("parse: ≥8 fontes com URL decodificada do redirect uddg, título e trecho reais", () => {
@@ -51,17 +52,40 @@ describe("bloqueio anti-robô do DDG (resposta REAL 202/anomaly de 24/10/2026)",
   });
 });
 
+describe("Wikipédia pt (API oficial) — backend keyless que responde de servidor", () => {
+  it("parse do JSON REAL: títulos, URLs e trechos citáveis", () => {
+    const f = parseWikipediaJson(wikiJson);
+    expect(f.length).toBeGreaterThanOrEqual(4);
+    expect(f[0]!.url).toContain("pt.wikipedia.org/wiki/");
+    expect(f[0]!.titulo.length).toBeGreaterThan(2);
+    expect(f[0]!.trecho.length).toBeGreaterThan(10);
+    expect(f[0]!.trecho).not.toContain("<span"); // tags removidas
+  });
+
+  it("DDG bloqueado mas Wikipédia OK → fontes reais + diagnóstico com o backend que respondeu", async () => {
+    const f = (async (url: RequestInfo | URL) => {
+      const u = String(url);
+      if (u.includes("duckduckgo")) return new Response(anomalyHtml, { status: 202 });
+      if (u.includes("pt.wikipedia.org")) return new Response(wikiJson, { status: 200 });
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    const r = await buscarWebDetalhado("prazo recurso apelacao", { fetchImpl: f, tentativas: 1 });
+    expect(r.fontes.length).toBeGreaterThanOrEqual(4);
+    expect(r.diagnostico.some((d) => d.backend === "wikipedia-pt" && d.status === 200)).toBe(true);
+  });
+});
+
 describe("modo IA do buscador (buscaIA) — resposta sempre com fonte", () => {
-  it("sem chave → provedor duckduckgo, geradaPorIA=false, resposta cita as fontes reais", async () => {
+  it("sem chave → provedor publico, geradaPorIA=false, resposta cita as fontes reais", async () => {
     const f = (async (url: RequestInfo | URL) => {
       if (String(url).includes("duckduckgo")) return new Response(ddgHtml, { status: 200 });
       return new Response("{}", { status: 500 });
     }) as typeof fetch;
     const r = await responderComBuscador("prazo de apelação no CPC", { fetchImpl: f, env: {} });
-    expect(r.provedor).toBe("duckduckgo");
+    expect(r.provedor).toBe("publico");
     expect(r.geradaPorIA).toBe(false);
     expect(r.fontes.length).toBeGreaterThanOrEqual(8);
-    expect(r.resposta).toContain("DuckDuckGo");
+    expect(r.resposta).toContain("busca pública");
     expect(r.resposta).toContain("AI_PROVIDER"); // instrução honesta de configuração
     expect(r.diagnostico.length).toBeGreaterThan(0); // tentativas reais expostas
   });
@@ -101,7 +125,7 @@ describe("modo IA do buscador (buscaIA) — resposta sempre com fonte", () => {
   it("sem chave e DDG bloqueado → explica o bloqueio e indica a chave gratuita (não inventa)", async () => {
     const f = (async () => new Response(anomalyHtml, { status: 202 })) as typeof fetch;
     const r = await responderComBuscador("prazo de apelação", { fetchImpl: f, env: {} });
-    expect(r.provedor).toBe("duckduckgo");
+    expect(r.provedor).toBe("publico");
     expect(r.geradaPorIA).toBe(false);
     expect(r.fontes).toEqual([]);
     expect(r.resposta).toContain("tavily.com");
@@ -117,7 +141,7 @@ describe("modo IA do buscador (buscaIA) — resposta sempre com fonte", () => {
       fetchImpl: f,
       env: { AI_PROVIDER: "perplexity", AI_API_KEY: "x" },
     });
-    expect(r.provedor).toBe("duckduckgo");
+    expect(r.provedor).toBe("publico");
     expect(r.geradaPorIA).toBe(false);
     expect(r.fontes.length).toBeGreaterThan(0);
   });

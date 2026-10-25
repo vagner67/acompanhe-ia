@@ -118,7 +118,7 @@ describe("GET /api/processos/pesquisar — paywall + detecção honesta", () => 
     const r = await app.inject({ method: "POST", url: "/api/processos/buscar-web", payload: body, headers: H });
     expect(r.statusCode).toBe(200);
     const b = r.json();
-    expect(b.provedor).toBe("duckduckgo");
+    expect(b.provedor).toBe("publico");
     expect(b.geradaPorIA).toBe(false);
     expect(b.fontes.length).toBeGreaterThanOrEqual(8);
     expect(b.fontes[0].url.startsWith("http")).toBe(true);

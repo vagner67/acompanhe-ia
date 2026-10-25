@@ -85,6 +85,23 @@ export function parseDdgLite(html: string): FonteWeb[] {
   return out;
 }
 
+/** Parse da API oficial da Wikipédia pt (action=query&list=search) — JSON real. */
+export function parseWikipediaJson(json: string): FonteWeb[] {
+  try {
+    const j = JSON.parse(json) as { query?: { search?: { title?: string; snippet?: string }[] } };
+    return (j.query?.search ?? [])
+      .filter((h) => h.title)
+      .slice(0, 8)
+      .map((h) => ({
+        titulo: h.title!,
+        url: `https://pt.wikipedia.org/wiki/${encodeURIComponent(h.title!.replace(/ /g, "_"))}`,
+        trecho: stripTags(h.snippet ?? ""),
+      }));
+  } catch {
+    return [];
+  }
+}
+
 /** Página de bloqueio/anomalia do DDG (medida: 202 com "anomaly"/"challenge"). */
 export function ehAnomalia(html: string): boolean {
   return /anomaly-modal|challenge-form|challenge\b|unusual traffic/i.test(html);
@@ -92,9 +109,24 @@ export function ehAnomalia(html: string): boolean {
 
 const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+const UA_WIKI = `${UA} (Acompanhe.IA; contato@acompanhe.app)`;
+
+/**
+ * Cadeia de backends SEM CHAVE. Ordem medida em 24/10/2026:
+ * DDG html/lite (bloqueiam IPs de datacenter com frequência) e, por último,
+ * a API oficial da Wikipédia pt — estável de servidor e com trechos citáveis
+ * (fonte real, nunca conteúdo gerado).
+ */
 const BACKENDS = [
-  { nome: "ddg-html", url: (q: string) => `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`, parse: parseDdgHtml },
-  { nome: "ddg-lite", url: (q: string) => `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(q)}`, parse: parseDdgLite },
+  { nome: "ddg-html", url: (q: string) => `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`, parse: parseDdgHtml, ua: UA },
+  { nome: "ddg-lite", url: (q: string) => `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(q)}`, parse: parseDdgLite, ua: UA },
+  {
+    nome: "wikipedia-pt",
+    url: (q: string) =>
+      `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&srlimit=8&utf8=1`,
+    parse: parseWikipediaJson,
+    ua: UA_WIKI,
+  },
 ];
 
 export async function buscarWebDetalhado(
@@ -108,7 +140,7 @@ export async function buscarWebDetalhado(
   for (let t = 0; t < tentativas; t++) {
     for (const b of BACKENDS) {
       try {
-        const resp = await f(b.url(query), { headers: { "User-Agent": UA } });
+        const resp = await f(b.url(query), { headers: { "User-Agent": b.ua } });
         const html = await resp.text();
         const anomalia = resp.status === 202 || ehAnomalia(html);
         const fontes = anomalia ? [] : b.parse(html);
