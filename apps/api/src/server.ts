@@ -37,8 +37,11 @@ import { InMemoryGameStore } from "./gamificacao/service.js";
 import { ensureDiretor, hashPassword, resolvePlanPrice, resolveTrialDays, InMemoryAdminStore, type AdminStore } from "./admin/service.js";
 import { PrismaAdminStore } from "./store-prisma.js";
 import { minhasRoutes } from "./routes/minhas.js";
+import { anotaRoutes } from "./routes/anota.js";
 import { filtrosRoutes, InMemoryFiltroStore, PrismaFiltroStore, type FiltroStore } from "./filtros.js";
 import { InMemoryMinhasStore, manualOcr, type MinhasStore } from "./minhas/service.js";
+import { InMemoryAnotaStore, type AnotaStore } from "./anota/store.js";
+import { PrismaAnotaStore } from "./anota/prisma.js";
 import { detectTesseract } from "./minhas/ocr.js";
 import { InMemorySubscriptionsStore, type SubscriptionsStore } from "./assinaturas/service.js";
 import { OsintStore } from "./osint/store.js";
@@ -100,6 +103,13 @@ export interface AppDeps {
   };
   admin?: { store?: AdminStore };
   minhas?: { store?: MinhasStore; ocr?: import("./minhas/service.js").OcrProvider };
+  /** AnotA (controle financeiro) — store e provedor de e-mail injetáveis. */
+  anota?: {
+    store?: AnotaStore;
+    emailProvider?: import("./anota/email.js").EmailProvider | null;
+    env?: Record<string, string | undefined>;
+    fetchImpl?: typeof fetch;
+  };
   assinaturas?: { subs?: SubscriptionsStore };
   filtros?: { store?: FiltroStore };
   /** Overrides para Empréstimo. */
@@ -421,13 +431,24 @@ export function registerInvestiga(app: FastifyInstance, deps: AppDeps, jwt: JwtS
         });
       }
     : null;
+  const anotaStore: AnotaStore =
+    deps.anota?.store ?? (dbForStores ? new PrismaAnotaStore(dbForStores) : new InMemoryAnotaStore());
+  void app.register(
+    anotaRoutes({
+      jwt,
+      store: anotaStore,
+      ocr: deps.minhas?.ocr ?? detectTesseract() ?? manualOcr,
+      ...(deps.anota?.emailProvider !== undefined ? { emailProvider: deps.anota.emailProvider } : {}),
+      ...(deps.anota?.env ? { env: deps.anota.env } : {}),
+      ...(deps.anota?.fetchImpl ? { fetchImpl: deps.anota.fetchImpl } : {}),
+    }),
+  );
   void app.register(
     minhasRoutes({
       jwt,
       store: minhasStore,
       loans: loanStore,
       verificacao: verificacaoStore,
-      ocr: deps.minhas?.ocr ?? detectTesseract() ?? manualOcr,
       ...(upsertUser ? { upsertUser } : {}),
     }),
   );

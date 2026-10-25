@@ -651,7 +651,114 @@ model Gasto {
   ocrEngine   String?  @db.VarChar(30) // manual | tesseract | api:<nome>
   createdAt   DateTime @default(now())
 
+  // ————— refatoração do AnotA (25/10): colunas ADITIVAS, todas com default,
+  // para que as linhas já existentes continuem válidas sem reescrita.
+  contaId       String?   @db.Uuid
+  categoriaId   String?   @db.Uuid
+  status        String    @default("pago") @db.VarChar(10) // pago | pendente
+  vencimento    DateTime?
+  parcelaDe     String?   @db.Uuid
+  parcelaNum    Int?
+  parcelasTotal Int?
+  recorrenteDe  String?   @db.Uuid
+  fitId         String?   @db.VarChar(120) // dedupe de importação (OFX/CSV)
+  origem        String    @default("manual") @db.VarChar(10) // manual | csv | ofx
+
   @@index([userId, spentAt])
+  @@index([userId, fitId])
+}
+
+// ————— AnotA: controle financeiro (models novos da refatoração) —————
+
+model AnotaConta {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.VarChar(64)
+  nome              String   @db.VarChar(80)
+  tipo              String   @db.VarChar(10) // caixa | banco | cartao | poupanca
+  saldoInicialCents Int      @default(0)
+  arquivada         Boolean  @default(false)
+  criadaEm          DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AnotaCategoria {
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @db.VarChar(64)
+  nome      String  @db.VarChar(40)
+  tipo      String  @db.VarChar(10) // despesa | receita
+  cor       String? @db.VarChar(20)
+  icone     String? @db.VarChar(20)
+  arquivada Boolean @default(false)
+
+  @@unique([userId, nome, tipo])
+}
+
+model AnotaReceita {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.VarChar(64)
+  amountCents  Int
+  category     String    @db.VarChar(40)
+  categoriaId  String?   @db.Uuid
+  contaId      String?   @db.Uuid
+  description  String    @db.VarChar(300)
+  recebidoEm   DateTime
+  vencimento   DateTime?
+  status       String    @default("pago") @db.VarChar(10)
+  recorrenteDe String?   @db.Uuid
+  fitId        String?   @db.VarChar(120)
+  origem       String    @default("manual") @db.VarChar(10)
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, recebidoEm])
+  @@index([userId, fitId])
+}
+
+model AnotaOrcamento {
+  id          String @id @default(uuid()) @db.Uuid
+  userId      String @db.VarChar(64)
+  categoriaId String @db.Uuid
+  ym          String @db.VarChar(7) // YYYY-MM
+  limiteCents Int
+
+  @@unique([userId, categoriaId, ym])
+}
+
+model AnotaCartao {
+  id             String @id @default(uuid()) @db.Uuid
+  userId         String @db.VarChar(64)
+  contaId        String @db.Uuid
+  nome           String @db.VarChar(60)
+  limiteCents    Int    @default(0)
+  fechamentoDia  Int    @default(1)
+  vencimentoDia  Int    @default(10)
+
+  @@index([userId])
+}
+
+model AnotaMeta {
+  id            String  @id @default(uuid()) @db.Uuid
+  userId        String  @db.VarChar(64)
+  nome          String  @db.VarChar(80)
+  alvoCents     Int
+  guardadoCents Int     @default(0)
+  prazo         String? @db.VarChar(10)
+
+  @@index([userId])
+}
+
+model AnotaBackup {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @db.VarChar(64)
+  email    String   @db.VarChar(160)
+  criadoEm DateTime @default(now())
+  bytes    Int
+  itens    Int
+  status   String   @db.VarChar(16) // enviado | falhou | nao_configurado
+  erro     String?  @db.Text
+  provedor String   @db.VarChar(40)
+
+  @@index([userId, criadoEm])
 }
 
 // ————— Filtros salvos (licitações + concursos) —————

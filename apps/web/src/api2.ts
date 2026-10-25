@@ -61,16 +61,50 @@ export function api(token: string) {
     gamificacao: () => get<Gamificacao>("/api/gamificacao"),
     acao: (acao: string) => post<AwardResult>("/api/gamificacao/acao", { acao }),
     rankingToggle: (participar: boolean) => post("/api/gamificacao/ranking", { participar }),
-    // —— AnotA (minhas) ——
-    notas: () => get<{ notas: NotaDto[] }>("/api/minhas/notas"),
-    notaCriar: (nota: { title: string; body?: string; tags?: string[] }) => post<{ nota: NotaDto }>("/api/minhas/notas", nota),
-    notaBuscar: (q: string) => get<{ notas: NotaDto[] }>(`/api/minhas/notas?q=${encodeURIComponent(q)}`),
-    gastos: (mes?: string) => get<{ gastos: GastoDto[] }>(`/api/minhas/gastos${mes ? `?mes=${mes}` : ""}`),
-    gastoCriar: (g: { amountCents: number; category: string; description: string; spentAt: string }) => post<{ gasto: GastoDto }>("/api/minhas/gastos", g),
-    gastoExcluir: (id: string) => del(`/api/minhas/gastos/${id}`),
-    ocr: (imageBase64: string) => post<{ texto: string; chars: number }>("/api/minhas/gastos/ocr", { imageBase64 }),
-    resumo: (mes: string) => get<{ totalCents: number; porCategoria: Record<string, number>; topCategorias: Array<[string, number]> }>(`/api/minhas/resumo?mes=${mes}`),
-    exportCsv: (mes: string) => fetch(`${BASE}/api/minhas/export.csv?mes=${mes}`, { headers: headers(token) }).then((r) => r.text()),
+    // —— AnotA (controle financeiro, refatorado em 25/10) ——
+    anotaResumo: (ym: string) => get<AnotaResumo>(`/api/anota/resumo?ym=${ym}`),
+    anotaLancamentos: (f: { ym?: string; de?: string; ate?: string; tipo?: "despesa" | "receita"; q?: string } = {}) => {
+      const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => Boolean(v)) as [string, string][]).toString();
+      return get<{ lancamentos: AnotaLancamento[] }>(`/api/anota/lancamentos${qs ? `?${qs}` : ""}`);
+    },
+    anotaLancamentoCriar: (l: {
+      tipo: "despesa" | "receita";
+      amountCents: number;
+      description: string;
+      category: string;
+      categoriaId?: string | null;
+      contaId?: string | null;
+      data: string;
+      vencimento?: string | null;
+      status?: "pago" | "pendente";
+      parcelas?: number;
+      repeticoes?: number;
+    }) => post<{ lancamento?: AnotaLancamento; lancamentos?: AnotaLancamento[] }>("/api/anota/lancamentos", l),
+    anotaLancamentoEditar: (id: string, patch: Partial<{ amountCents: number; description: string; status: "pago" | "pendente"; data: string; categoriaId: string | null }>) =>
+      fetch(`${BASE}/api/anota/lancamentos/${id}`, { method: "PUT", headers: headers(token), body: JSON.stringify(patch) }).then(j<{ lancamento: AnotaLancamento }>),
+    anotaLancamentoExcluir: (id: string) => del(`/api/anota/lancamentos/${id}`),
+    anotaContas: () => get<{ contas: AnotaConta[]; saldoConsolidadoCents: number }>("/api/anota/contas"),
+    anotaContaCriar: (c: { nome: string; tipo: AnotaConta["tipo"]; saldoInicialCents: number }) => post<{ conta: AnotaConta }>("/api/anota/contas", c),
+    anotaCategorias: () => get<{ categorias: AnotaCategoria[] }>("/api/anota/categorias"),
+    anotaCategoriaCriar: (c: { nome: string; tipo: "despesa" | "receita" }) => post<{ categoria: AnotaCategoria }>("/api/anota/categorias", c),
+    anotaOrcamentos: (ym: string) => get<{ orcamentos: AnotaOrcamentoStatus[]; ym: string }>(`/api/anota/orcamentos?ym=${ym}`),
+    anotaOrcamentoSalvar: (o: { categoriaId: string; ym: string; limiteCents: number }) => post<{ orcamento: { id: string } }>("/api/anota/orcamentos", o),
+    anotaCartoes: () => get<{ cartoes: AnotaCartao[] }>("/api/anota/cartoes"),
+    anotaCartaoCriar: (c: { contaId: string; nome: string; limiteCents: number; fechamentoDia: number; vencimentoDia: number }) => post<{ cartao: AnotaCartao }>("/api/anota/cartoes", c),
+    anotaMetas: () => get<{ metas: AnotaMeta[] }>("/api/anota/metas"),
+    anotaMetaCriar: (m: { nome: string; alvoCents: number; guardadoCents?: number }) => post<{ meta: AnotaMeta }>("/api/anota/metas", m),
+    anotaMetaEditar: (id: string, campos: { guardadoCents?: number }) => patch<{ meta: AnotaMeta }>(`/api/anota/metas/${id}`, campos),
+    anotaRelatorio: (ym: string, meses = 6) => get<{ ym: string; meses: string[]; linhas: AnotaLinhaRelatorio[] }>(`/api/anota/relatorio?ym=${ym}&meses=${meses}`),
+    anotaImportar: (f: { formato: "csv" | "ofx"; conteudo: string; contaId?: string }) =>
+      post<{ importados: number; ignorados: number; erros: Array<{ linha: number; motivo: string }> }>("/api/anota/importar", f),
+    anotaExportCsv: () => fetch(`${BASE}/api/anota/export.csv`, { headers: headers(token) }).then((r) => r.text()),
+    anotaOcr: (imageBase64: string) => post<{ texto: string; chars: number; engine: string }>("/api/anota/ocr", { imageBase64 }),
+    anotaNotas: (q?: string) => get<{ notas: NotaDto[] }>(`/api/anota/notas${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+    anotaNotaCriar: (n: { title: string; body?: string; tags?: string[] }) => post<{ nota: NotaDto }>("/api/anota/notas", n),
+    anotaNotaExcluir: (id: string) => del(`/api/anota/notas/${id}`),
+    anotaBackupEstado: () => get<AnotaBackupEstado>("/api/anota/backup"),
+    anotaBackupEnviar: (email: string) => post<AnotaBackupResposta>("/api/anota/backup", { email }),
+    anotaBackupArquivo: () => fetch(`${BASE}/api/anota/backup/arquivo`, { headers: headers(token) }).then((r) => r.blob()),
     verificacao: () => get<{ status: string; level: string | null; campos: unknown | null }>("/api/minhas/verificacao"),
     verificacaoEnviar: (campos: { docTipo: "cnh" | "rg" | "cpf" | "passaporte"; selfieAt?: string }) => post<{ ok: boolean }>("/api/minhas/verificacao", campos),
     perfil: () => get<{ perfil: Record<string, unknown> }>("/api/minhas/perfil"),
@@ -297,6 +331,133 @@ export interface StatusAssinatura {
   trialDias: number;
   pushinpayConfigurado?: boolean;
 }
+
+// ————— AnotA: tipos do controle financeiro —————
+export interface AnotaConta {
+  id: string;
+  nome: string;
+  tipo: "caixa" | "banco" | "cartao" | "poupanca";
+  saldoInicialCents: number;
+  arquivada: boolean;
+  saldoCents?: number;
+}
+export interface AnotaCategoria {
+  id: string;
+  nome: string;
+  tipo: "despesa" | "receita";
+  cor: string | null;
+  icone: string | null;
+}
+export interface AnotaLancamento {
+  id: string;
+  tipo: "despesa" | "receita";
+  amountCents: number;
+  description: string;
+  category: string;
+  categoriaId: string | null;
+  contaId: string | null;
+  data: string;
+  vencimento: string | null;
+  status: "pago" | "pendente";
+  parcelaNum: number | null;
+  parcelasTotal: number | null;
+  origem: "manual" | "csv" | "ofx";
+}
+export interface AnotaOrcamentoStatus {
+  categoriaId: string;
+  categoria: string;
+  limiteCents: number;
+  gastoCents: number;
+  restanteCents: number;
+  pct: number;
+  estado: "ok" | "atencao" | "estourou";
+}
+export interface AnotaCartao {
+  id: string;
+  contaId: string;
+  nome: string;
+  limiteCents: number;
+  fechamentoDia: number;
+  vencimentoDia: number;
+}
+export interface AnotaFatura {
+  cartaoId: string;
+  nome: string;
+  ym: string;
+  fechaEm: string;
+  venceEm: string;
+  totalCents: number;
+  itens: number;
+  limiteCents: number;
+  disponivelCents: number;
+  pagoCents: number;
+  abertoCents: number;
+}
+export interface AnotaMeta {
+  id: string;
+  nome: string;
+  alvoCents: number;
+  guardadoCents: number;
+  prazo: string | null;
+  pct?: number;
+}
+export interface AnotaResumoCategoria {
+  categoria: string;
+  tipo: "despesa" | "receita";
+  totalCents: number;
+  count: number;
+}
+export interface AnotaResumo {
+  ym: string;
+  resumo: {
+    ym: string;
+    receitasCents: number;
+    despesasCents: number;
+    saldoCents: number;
+    apagarCents: number;
+    porCategoria: AnotaResumoCategoria[];
+  };
+  contas: AnotaConta[];
+  saldoConsolidadoCents: number;
+  orcamentos: AnotaOrcamentoStatus[];
+  faturas: AnotaFatura[];
+  metas: AnotaMeta[];
+}
+export interface AnotaLinhaRelatorio {
+  ym: string;
+  receitasCents: number;
+  despesasCents: number;
+  saldoCents: number;
+  variacaoDespesaPct: number | null;
+}
+export interface AnotaBackupHistorico {
+  id: string;
+  email: string;
+  criadoEm: string;
+  bytes: number;
+  itens: number;
+  status: "enviado" | "falhou" | "nao_configurado";
+  erro: string | null;
+  provedor: string;
+}
+export interface AnotaBackupEstado {
+  historico: AnotaBackupHistorico[];
+  emailSugerido: string | null;
+  envioConfigurado: boolean;
+  provedor: string | null;
+  instrucao: string | null;
+}
+export interface AnotaBackupResposta {
+  status?: string;
+  email?: string;
+  provedor?: string;
+  itens?: number;
+  bytes?: number;
+  erro?: string;
+  instrucao?: string;
+  downloadDisponivel?: string;
+}
+
 export interface NotaDto {
   id: string;
   title: string;
@@ -304,6 +465,8 @@ export interface NotaDto {
   tags: string[];
   pinned?: boolean;
   createdAt: string;
+  /** a API devolve `updatedAt` desde a refatoração do AnotA (25/10) */
+  updatedAt?: string;
 }
 export interface GastoDto {
   id: string;

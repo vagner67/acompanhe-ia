@@ -114,48 +114,63 @@ describe("assinaturas — planos/checkout/trial/efeito", () => {
   });
 });
 
-describe("AnotA — notas/gastos/resumo/CSV", () => {
-  it("CRUD de notas + fixar + tags", async () => {
+describe("AnotA — notas/lançamentos/resumo/CSV (contrato novo /api/anota)", () => {
+  it("CRUD de notas + busca textual + fixar", async () => {
     const ctx = makeApp();
     const t = await token(ctx.app);
     const H = { authorization: `Bearer ${t}`, "content-type": "application/json" };
-    const c = await ctx.app.inject({ method: "POST", url: "/api/minhas/notas", headers: H, payload: { title: "Compras", body: "arroz feijão", tags: ["casa"] } });
+    const c = await ctx.app.inject({ method: "POST", url: "/api/anota/notas", headers: H, payload: { title: "Compras", body: "arroz feijão", tags: ["casa"] } });
     expect(c.statusCode).toBe(201);
     const id = c.json().nota.id;
-    const u = await ctx.app.inject({ method: "PUT", url: `/api/minhas/notas/${id}`, headers: H, payload: { pinned: true } });
+    const u = await ctx.app.inject({ method: "PUT", url: `/api/anota/notas/${id}`, headers: H, payload: { pinned: true } });
     expect(u.json().nota.pinned).toBe(true);
-    const l = await ctx.app.inject({ method: "GET", url: "/api/minhas/notas", headers: H });
+    const l = await ctx.app.inject({ method: "GET", url: "/api/anota/notas", headers: H });
     expect(l.json().notas.length).toBe(1);
-    expect((await ctx.app.inject({ method: "DELETE", url: `/api/minhas/notas/${id}`, headers: H })).statusCode).toBe(200);
-    expect((await ctx.app.inject({ method: "GET", url: "/api/minhas/notas", headers: H })).json().notas.length).toBe(0);
+    // busca textual: bate no título, no corpo e nas tags
+    expect((await ctx.app.inject({ method: "GET", url: "/api/anota/notas?q=feij%C3%A3o", headers: H })).json().notas.length).toBe(1);
+    expect((await ctx.app.inject({ method: "GET", url: "/api/anota/notas?q=casa", headers: H })).json().notas.length).toBe(1);
+    expect((await ctx.app.inject({ method: "GET", url: "/api/anota/notas?q=inexistente", headers: H })).json().notas.length).toBe(0);
+    expect((await ctx.app.inject({ method: "DELETE", url: `/api/anota/notas/${id}`, headers: H })).statusCode).toBe(200);
+    expect((await ctx.app.inject({ method: "GET", url: "/api/anota/notas", headers: H })).json().notas.length).toBe(0);
   });
 
-  it("gasto: OCR manual honesto (sem provider NÃO inventa texto) + resumo + CSV", async () => {
+  it("lançamentos somam no resumo, CSV tem cabeçalho e o alias antigo continua respondendo", async () => {
     const ctx = makeApp();
     const t = await token(ctx.app);
     const H = { authorization: `Bearer ${t}`, "content-type": "application/json" };
-    const g = await ctx.app.inject({
+    const a = await ctx.app.inject({
       method: "POST",
-      url: "/api/minhas/gastos",
+      url: "/api/anota/lancamentos",
       headers: H,
-      payload: { amountCents: 5990, category: "mercado", description: "feira", spentAt: "2026-10-05T10:00:00.000Z", photoBase64: "AAAA" },
+      payload: { tipo: "despesa", amountCents: 5990, category: "mercado", description: "feira", data: "2026-10-05", status: "pago" },
     });
-    expect(g.statusCode).toBe(201);
-    expect(g.json().ocr.textoExtraido).toBe(false); // imagem inválida → NENHUM texto inventado
-    expect(String(g.json().gasto.ocrEngine ?? "manual")).toMatch(/^(manual|tesseract)/);
-    await ctx.app.inject({
+    expect(a.statusCode).toBe(201);
+    const b = await ctx.app.inject({
       method: "POST",
-      url: "/api/minhas/gastos",
+      url: "/api/anota/lancamentos",
       headers: H,
-      payload: { amountCents: 1200, category: "transporte", description: "bus", spentAt: "2026-10-06T10:00:00.000Z", ocrText: "R$ 12,00 bus" },
+      payload: { tipo: "despesa", amountCents: 1200, category: "transporte", description: "bus", data: "2026-10-06", status: "pago" },
     });
-    const resumo = await ctx.app.inject({ method: "GET", url: "/api/minhas/resumo?ym=2026-10", headers: H });
-    expect(resumo.json().resumo.totalCents).toBe(7190);
+    expect(b.statusCode).toBe(201);
+
+    const resumo = await ctx.app.inject({ method: "GET", url: "/api/anota/resumo?ym=2026-10", headers: H });
+    expect(resumo.json().resumo.despesasCents).toBe(7190);
     expect(resumo.json().resumo.porCategoria.length).toBe(2);
-    const csv = await ctx.app.inject({ method: "GET", url: "/api/minhas/export.csv", headers: H });
+
+    const csv = await ctx.app.inject({ method: "GET", url: "/api/anota/export.csv", headers: H });
     expect(csv.statusCode).toBe(200);
-    expect(csv.body).toContain("gasto");
     expect(csv.headers["content-type"]).toContain("text/csv");
+    expect(csv.body).toContain("descricao");
+    expect(csv.body).toContain("feira");
+
+    // compatibilidade: cliente antigo lê /api/minhas/gastos?mes= e recebe `spentAt`
+    const legado = await ctx.app.inject({ method: "GET", url: "/api/minhas/gastos?mes=2026-10", headers: H });
+    expect(legado.statusCode).toBe(200);
+    expect(legado.json().gastos.length).toBe(2);
+    expect(legado.json().gastos[0].spentAt).toBe("2026-10-05");
+    const legadoResumo = await ctx.app.inject({ method: "GET", url: "/api/minhas/resumo?mes=2026-10", headers: H });
+    expect(legadoResumo.json().resumo.totalCents).toBe(7190);
+    expect(legadoResumo.json().topCategorias.length).toBe(2);
   });
 
   it("verificação V1: submit → pending; empréstimos minhas + dividas", async () => {
