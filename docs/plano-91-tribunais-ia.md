@@ -83,14 +83,29 @@ POST /api/processos/buscar-web  { pergunta: string }
 
 UI chat: ao clicar "🔎 Buscar na web", a pergunta vai para `buscar-web`; a resposta aparece no histórico com (i) cabeçalho do provedor, (ii) resposta (gerada ou fontes), (iii) cards título+link+trecho.
 
-## 4. Checklist
+## 4. Checklist (EXECUTADO)
 
-- [x] Pesquisa externa exaustiva (aliases 91, e-SAJ, IA APIs)
-- [ ] `cnj.ts`: ALIAS completo + candidates + testes
-- [ ] `pesquisa.ts`: bases ac/ce + `buscaWeb.ts` + `buscaIA.ts` + testes
-- [ ] `service.ts` candidates + rota `buscar-web`
-- [ ] UI: chip cobertura, botão web no chat, barra de progresso
-- [ ] tsc + suíte completa verde
-- [ ] Smoke live (`tools/smoke-busca-live.py` atualizado: 91 nº, nome ac/ce, buscar-web)
-- [ ] Commit + push + deploy Render + smoke live
-- [ ] Apresentar resultado + pedir aprovação (+ perguntar chave IA se usuário quiser resposta gerada)
+- [x] Pesquisa externa exaustiva (aliases 91 medidas uma a uma, e-SAJ, APIs de IA)
+- [x] `cnj.ts`: ALIAS completo (91) + `aliasCandidatesFromCnj` + `TRIBUNAIS_DATAJUD` + testes
+- [x] `pesquisa.ts`: bases ac/ce + candidatos (corte + superior do ramo)
+- [x] `buscaWeb.ts` (DDG html/lite + Wikipédia pt, retry, diagnóstico) + `buscaIA.ts` (tavily|perplexity|gemini)
+- [x] rotas: `pesquisar` c/ cobertura nova, `buscar` por nº nos 91, `detalhes-lote` c/ fallback, **`POST /buscar-web`**
+- [x] UI jurídica: botão "🔎 Buscar na web" no chat, cards de fontes clicáveis, diagnósticos, textos de cobertura honestos
+- [x] tsc api/web/shared = 0 · **suíte 304 passed / 0 failed / 1 skipped**
+- [x] commits `6394895`, `6b26b96`, `3d7abf3` → autoDeploy Render LIVE
+- [x] smoke live 18/18
+
+## 5. Resultado medido AO VIVO (24/10/2026, https://acompanhe.onrender.com)
+
+| Verificação | Resultado real |
+|---|---|
+| nº real **TRT1** (trabalho) `0101470-17.2025.5.01.0561` | 200 · classe "Ação Trabalhista - Rito Ordinário" |
+| nº real **TRE-SP** (eleitoral) `0606733-90.2026.6.26.0000` | 200 · "Representação" |
+| nº real **STM** (militar) `7000086-62.2026.7.06.0006` | 200 · "Instrução Provisória de Deserção" |
+| nº real **TJMG** `5014976-13.2026.8.13.0701` | 200 · "Auto de Prisão em Flagrante" |
+| nome/CPF em `todas` | **4 fontes: ac, al, ce, sp** — todas `resultados` (72 processos reais) |
+| UF fora da cobertura (MT) | busca ampliada + advertência "cobertura atual: AC, AL, CE e SP" |
+| **buscar-web** (modo buscador no chat) | 200 · provedor `publico` · **8 fontes reais** (`wikipedia-pt` 200; DDG bloqueado do Render com diagnóstico explícito) |
+| validações | CPF DV errado → 422 · CNJ no campo de terceiros → 422 com dica · CPF válido sem registro → `vazio` honesto |
+
+**Limitação declarada (não mascarada)**: busca por **nome/CPF** cobre as 4 bases e-SAJ verificadas; os demais tribunais usam captcha/login (TJGO, PJe) ou bloqueiam IP de servidor (TJAM/TJRS/TJSC/TJBA/TJMS) — a UI diz isso e aponta o nº do processo (91) ou o portal oficial. Busca **web** ampla (fora da Wikipédia) e respostas **geradas por IA com citações** exigem uma chave gratuita do Tavily (1.000 consultas/mês, sem cartão): basta definir `AI_PROVIDER=tavily` + `AI_API_KEY` no serviço — os adaptadores (Tavily/Perplexity Agent API/Gemini grounding) já estão implementados e testados.
