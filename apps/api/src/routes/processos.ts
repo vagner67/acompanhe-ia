@@ -17,6 +17,7 @@ import { alertDedupeKey, type AlertSink } from "../jobs/dispatcher.js";
 import type { LegalEventDto } from "../juridico/types.js";
 import type { DatajudClientOpts } from "../juridico/datajud.js";
 import { INGEST_LOTE } from "../juridico/limites.js";
+import { readServiceToken } from "../service-token.js";
 import { avaliarRisco } from "../juridico/risco.js";
 import { cobertura, FONTES_INFO } from "../juridico/fontes.js";
 import { ranquear, type IndiceStore } from "../juridico/indice.js";
@@ -339,7 +340,7 @@ export function processosRoutes(deps: ProcessosDeps) {
 
     // ── Ingestão do índice em lote (job/ops) — protegida por token de serviço ──
     app.post("/api/processos/indice/ingest", async (req: FastifyRequest, reply: FastifyReply) => {
-      const esperado = deps.serviceToken?.() ?? process.env.SERVICE_TOKEN ?? null;
+      const esperado = deps.serviceToken?.() ?? readServiceToken();
       const recebido = (req.headers["x-service-token"] as string | undefined) ?? "";
       if (!esperado || recebido !== esperado) return reply.code(401).send({ error: "token de serviço inválido" });
       if (!deps.indice) return reply.code(503).send({ error: "índice indisponível neste ambiente" });

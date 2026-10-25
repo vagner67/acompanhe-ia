@@ -17,17 +17,9 @@ import {
   healthScore, redact, WEIGHTS,
 } from "../ops/service.js";
 
-const SECRETS = () => process.env.SERVICE_TOKEN_FILE ?? "/home/user/.secrets.json";
-let tokenCache: { token: string | null; at: number } = { token: null, at: 0 };
-function readServiceToken(): string | null {
-  if (Date.now() - tokenCache.at < 5000) return tokenCache.token;
-  let token: string | null = null;
-  try {
-    token = (JSON.parse(readFileSync(SECRETS(), "utf8")) as { SERVICE_TOKEN?: string }).SERVICE_TOKEN ?? null;
-  } catch { /* sem arquivo = sem token */ }
-  tokenCache = { token, at: Date.now() };
-  return token;
-}
+// leitura do token de serviço centralizada em ../service-token.ts (mesma regra
+// de produção: Render Secret File via SERVICE_TOKEN_FILE, cache de 5s)
+import { readServiceToken, esquecerServiceToken, caminhoServiceToken } from "../service-token.js";
 
 const LOG_FILES: Record<string, string> = {
   api: "/tmp/api.log",
@@ -311,14 +303,14 @@ export function opsRoutes(deps: {
       const novo = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join("");
       try {
         const fs = await import("node:fs");
-        const sec = JSON.parse(fs.readFileSync(SECRETS(), "utf8")) as Record<string, unknown>;
+        const sec = JSON.parse(fs.readFileSync(caminhoServiceToken(), "utf8")) as Record<string, unknown>;
         sec.SERVICE_TOKEN = novo;
-        fs.writeFileSync(SECRETS(), JSON.stringify(sec, null, 2));
-        fs.chmodSync(SECRETS(), 0o600);
+        fs.writeFileSync(caminhoServiceToken(), JSON.stringify(sec, null, 2));
+        fs.chmodSync(caminhoServiceToken(), 0o600);
       } catch (e) {
         return reply.code(500).send({ error: `falha ao gravar secrets: ${String(e)}` });
       }
-      tokenCache = { token: null, at: 0 }; // força releitura
+      esquecerServiceToken(); // força releitura imediata
       await audit(claims, "ops.rotate_service_token", "SERVICE_TOKEN", null, { rotatedAt: new Date().toISOString() }, req.ip);
       return reply.send({ ok: true, rotatedAt: new Date().toISOString() });
     });

@@ -205,3 +205,9 @@ Correções:
 - **Latência do DataJud**: ~30–50 s por processo em horário de pico; ingestão é assíncrona por lote (≤200) de propósito.
 - **Monitoramento**: 1º ciclo após o deploy; log `monitor_ciclo` em `opsEvent` para auditar.
 - **Próximo passo natural**: agendador de ingestão (coletar números dos casos ativos dos usuários), depois DJEN quando houver egress brasileiro.
+
+### 9.6 Segundo bug real, achado só no smoke de produção
+
+`POST /api/processos/indice/ingest` respondia **401 mesmo com o `x-service-token` correto** em `acompanhe.onrender.com`. Causa: a rota só consultava `process.env.SERVICE_TOKEN`, mas o Render entrega o token como **Secret File** (`SERVICE_TOKEN_FILE=/etc/secrets/servicetokens.json`) — quem já sabia disso era `routes/ops.ts`, com uma cópia local da leitura.
+
+Correção: leitura extraída para `apps/api/src/service-token.ts` (`readServiceToken` com cache de 5s, `esquecerServiceToken`, `caminhoServiceToken`), usada agora por **ops** (inclusive a rotação) e pela **ingestão**. Teste dedicado: `test/service-token.test.ts` (arquivo, env, ausência → `null`, cache vs rotação).
