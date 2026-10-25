@@ -19,6 +19,7 @@ import {
   auditHash,
   can,
   hashPassword,
+  permissoesDoPapel,
   resolvePlanPrice,
   resolveTrialDays,
   verifyPassword,
@@ -116,7 +117,17 @@ export function adminRoutes(deps: {
       loginOk(ip);
       const token = await jwt.issue(admin.id, admin.role);
       await audit({ sub: admin.id, role: admin.role, kind: "admin" }, "admin.login", admin.email, null, null, req.ip);
-      return reply.send({ token, admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role } });
+      return reply.send({
+        token,
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          // a UI usa esta lista; sem ela o painel quebrava ao entrar (crash real medido)
+          permissions: permissoesDoPapel(admin.role),
+        },
+      });
     });
 
     app.get("/v1/admin/auth/me", async (req, reply) => {
@@ -307,7 +318,13 @@ export function adminRoutes(deps: {
       const claims = await actor(req, reply, "db");
       if (!claims) return;
       const tabela = (req.params as { tabela: string }).tabela;
-      const permitidas = ["user", "payment", "subscription", "nota", "gasto", "loanrequest", "loanmatch", "matchpayment", "legalcase", "legaladvice", "contest", "tender", "alertevent", "userverification"];
+      // inclui o que o auto-aperfeiçoamento grava — antes o operador não conseguia
+      // auditar perfil/métrica/deriva por nenhuma rota (só o banco).
+      const permitidas = [
+        "user", "payment", "subscription", "nota", "gasto", "loanrequest", "loanmatch", "matchpayment",
+        "legalcase", "legaladvice", "contest", "tender", "alertevent", "userverification",
+        "fonteperfil", "fontemetrica", "coletoreestado", "coletormetrica", "coletoracao", "syncrun",
+      ];
       if (!permitidas.includes(tabela.toLowerCase())) return reply.code(404).send({ error: "tabela fora da whitelist", permitidas });
       if (!deps.config.DATABASE_URL) return reply.send({ tabela, rows: [], aviso: "sem DATABASE_URL — visor vazio" });
       const { createDb } = await import("@acompanhe/db");

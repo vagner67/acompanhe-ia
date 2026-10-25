@@ -248,10 +248,18 @@ export function processosRoutes(deps: ProcessosDeps) {
       const { pesquisarTerceiros, COBERTURA_UFS } = await import("../juridico/pesquisa.js");
       const ufCoberta = !ufPedida || COBERTURA_UFS.includes(ufPedida);
       const ufs = ufPedida && ufCoberta ? [ufPedida] : undefined;
+      // Perfis do auto-aperfeiçoamento também aqui: é esta a busca que o usuário
+      // usa por nome/CPF (a nacional é a de número). Sem isso o ciclo mediria e
+      // não mudaria nada do que a pessoa vê.
+      const perfisPesquisa = await perfisParaBusca(
+        deps.perfis ?? perfisPadrao(),
+        (ufs ?? [...COBERTURA_UFS]).map((u) => `esaj-${u.toLowerCase()}`),
+      ).catch(() => ({}));
       const r = await pesquisarTerceiros(det.tipo as "nome" | "cpf" | "cnpj", det.valor, {
         ...(ufs ? { ufs } : {}),
         ...(q.pagina ? { pagina: q.pagina } : {}),
         ...(deps.datajudOpts?.fetchImpl ? { fetchImpl: deps.datajudOpts.fetchImpl } : {}),
+        perfis: perfisPesquisa,
       });
       const advertencias = [
         ...(det.advertencia ? [det.advertencia] : []),

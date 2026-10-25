@@ -868,7 +868,9 @@ function Spark({ pontos, cor = "#6ea8fe" }: { pontos: number[]; cor?: string }) 
 
 export function AdminScreen({ toast }: { toast: (m: string) => void }) {
   const [token, setToken] = useState("");
-  const [admin, setAdmin] = useState<{ email: string; role: string; permissions: string[] } | null>(null);
+  // `permissions` pode não vir do /auth/me — a tela nunca pode quebrar por isso
+  // (medido: crash de página em branco ao entrar no painel).
+  const [admin, setAdmin] = useState<{ email: string; role: string; permissions?: string[] } | null>(null);
   const [aba, setAba] = useState<Aba>((() => {
     const q = new URLSearchParams(window.location.search).get("aba");
     return (ABAS as string[]).includes(q ?? "") ? (q as Aba) : "visao";
@@ -965,7 +967,7 @@ export function AdminScreen({ toast }: { toast: (m: string) => void }) {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
             <h3 style={{ marginBottom: 2 }}>🛡 {admin.email}</h3>
-            <div className="tiny">papel: <b>{admin.role}</b> · permissões: {admin.permissions.join(", ") || "—"}</div>
+            <div className="tiny">papel: <b>{admin.role}</b> · permissões: {(admin.permissions ?? []).join(", ") || "—"}</div>
           </div>
           <div className="row">
             <div className="chip" style={{ borderColor: scoreColor(score), color: scoreColor(score) }} title="health score (§3.6)">

@@ -4,6 +4,7 @@
  * cruzamento DataJud por CNJ. Estados honestos por fonte; nunca fabrica.
  */
 import { consultarEsaj, COBERTURA_UFS, type ResultadoEsaj, type ProcessoTercero } from "./esaj.js";
+import type { PerfilFonte } from "./autoaperfeicoamento.js";
 import { parseCnj, aliasCandidatesFromCnj } from "./cnj.js";
 import { mapDoc } from "./service.js";
 import type { DatajudDoc } from "./types.js";
@@ -15,6 +16,20 @@ export interface PesquisaTerceirosOpts {
   ufs?: string[]; // default: todas as verificadas
   pagina?: number;
   fetchImpl?: typeof fetch;
+  /**
+   * Perfis vigentes do auto-aperfeiçoamento por fonte (`esaj-sp`, ...).
+   * É o que faz o ciclo MEDIDO valer na busca por nome/CPF que o usuário usa —
+   * antes só a busca nacional consumia o perfil e esta ficava no padrão de fábrica.
+   */
+  perfis?: Record<string, PerfilFonte | undefined>;
+}
+
+/** 0 = termo exato · 1 = sem acento · 2 = sem acento e caixa alta (idem nacional). */
+function aplicarVarianteNome(termo: string, variante: number): string {
+  const limpo = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (variante === 1) return limpo(termo);
+  if (variante === 2) return limpo(termo).toUpperCase();
+  return termo;
 }
 
 export interface PesquisaTerceiros {
@@ -39,7 +54,15 @@ export async function pesquisarTerceiros(
   const tipoCampo = tipo === "nome" ? "NMPARTE" : "DOCPARTE";
   const fontes: ResultadoEsaj[] = [];
   for (const uf of ufs) {
-    fontes.push(await consultarEsaj(uf, tipoCampo, valor, pagina, { ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}) }));
+    // o perfil desta UF decide termo e timeout — parâmetro que o ciclo aprendeu
+    const perfil = opts.perfis?.[`esaj-${uf}`];
+    const termo = tipo === "nome" ? aplicarVarianteNome(valor, perfil?.varianteNome ?? 0) : valor;
+    const extra = {
+      ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
+      ...(perfil?.timeoutMs ? { timeoutMs: perfil.timeoutMs } : {}),
+      ...(perfil?.concorrencia ? {} : {}),
+    };
+    fontes.push(await consultarEsaj(uf, tipoCampo, termo, pagina, extra));
   }
   const itens = fontes.flatMap((f) => f.itens);
   return { tipo, valor, fontes, itens, rodape: RODAPE_TERCEIROS };

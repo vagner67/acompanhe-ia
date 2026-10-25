@@ -35,6 +35,11 @@ const PERMISSIONS: Record<AdminRole, string[]> = {
   suporte_oab: ["verificacoes"],
 };
 
+/** Lista de recursos do papel — usada pelo painel para não mostrar o que não pode. */
+export function permissoesDoPapel(role: AdminRole): string[] {
+  return [...(PERMISSIONS[role] ?? [])];
+}
+
 export function can(role: AdminRole, resource: string): boolean {
   const p = PERMISSIONS[role] ?? [];
   return p.includes("*") || p.includes(resource);
