@@ -147,7 +147,9 @@ describe("Painel do operador — permissões e visor do que o ciclo grava", () =
       const r = await app.inject({ method: "GET", url: `/v1/admin/db/${tabela}`, headers: { authorization: `Bearer ${tk}` } });
       // sem DATABASE_URL o visor responde vazio — o que importa é NÃO ser 404 de whitelist
       expect(r.statusCode, tabela).toBe(200);
-      expect(r.json().error ?? "").not.toContain("whitelist");
+      // "modelo indisponível" = nome do model errado (bug real medido em produção)
+      expect(r.json().error ?? "", tabela).not.toContain("whitelist");
+      expect(r.json().error ?? "", tabela).not.toContain("modelo");
     }
     await app.close();
   });

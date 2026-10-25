@@ -314,23 +314,29 @@ export function adminRoutes(deps: {
     });
 
     // ————— Visor de BD (whitelist) —————
+    // O client do Prisma expõe os models em camelCase (`syncRun`, `fontePerfil`);
+    // usar o nome da tabela direto devolvia "modelo indisponível" em metade delas
+    // (medido em produção: nem SyncRun nem FontePerfil abriam no painel).
+    const MODELOS: Record<string, string> = {
+      user: "user", payment: "payment", subscription: "subscription", nota: "nota", gasto: "gasto",
+      loanrequest: "loanRequest", loanmatch: "loanMatch", matchpayment: "matchPayment",
+      legalcase: "legalCase", legaladvice: "legalAdvice", contest: "contest", tender: "tender",
+      alertevent: "alertEvent", userverification: "userVerification",
+      fonteperfil: "fontePerfil", fontemetrica: "fonteMetrica",
+      coletoreestado: "coletorEstado", coletormetrica: "coletorMetrica", coletoracao: "coletorAcao",
+      syncrun: "syncRun",
+    };
     app.get("/v1/admin/db/:tabela", async (req, reply) => {
       const claims = await actor(req, reply, "db");
       if (!claims) return;
-      const tabela = (req.params as { tabela: string }).tabela;
-      // inclui o que o auto-aperfeiçoamento grava — antes o operador não conseguia
-      // auditar perfil/métrica/deriva por nenhuma rota (só o banco).
-      const permitidas = [
-        "user", "payment", "subscription", "nota", "gasto", "loanrequest", "loanmatch", "matchpayment",
-        "legalcase", "legaladvice", "contest", "tender", "alertevent", "userverification",
-        "fonteperfil", "fontemetrica", "coletoreestado", "coletormetrica", "coletoracao", "syncrun",
-      ];
-      if (!permitidas.includes(tabela.toLowerCase())) return reply.code(404).send({ error: "tabela fora da whitelist", permitidas });
+      const tabela = (req.params as { tabela: string }).tabela.toLowerCase();
+      const permitidas = Object.keys(MODELOS);
+      if (!permitidas.includes(tabela)) return reply.code(404).send({ error: "tabela fora da whitelist", permitidas });
       if (!deps.config.DATABASE_URL) return reply.send({ tabela, rows: [], aviso: "sem DATABASE_URL — visor vazio" });
       const { createDb } = await import("@acompanhe/db");
       const db = createDb(deps.config.DATABASE_URL) as never as Record<string, { findMany: (x: unknown) => Promise<unknown[]> }>;
-      const model = (db as never as Record<string, { findMany: (x: unknown) => Promise<unknown[]> }>)[tabela.toLowerCase()];
-      if (!model) return reply.code(404).send({ error: "modelo indisponível" });
+      const model = db[MODELOS[tabela]!];
+      if (!model) return reply.code(404).send({ error: "modelo indisponível", tabela, modelo: MODELOS[tabela] });
       const limite = Math.min(Math.max(Number((req.query as { limite?: string }).limite ?? 50), 1), 50); // 1..50 (visor)
       const rows = await model.findMany({ take: limite });
       return reply.send({ tabela, rows, rule: "visor somente-leitura · 50 linhas" });
