@@ -326,3 +326,27 @@ O e-SAJ de SP, consultado com nome curto ("João Carlos"), responde “foram enc
 muitos processos, refine sua busca” — o relatório já expõe isso como estado `refinar`,
 não como “nenhum processo”.
 
+
+### 9.8 Auditoria "está no app completo?" (25/10, após deploy `39b55eb`)
+
+Verificado **em produção**, não no código:
+
+| Ponta | Evidência |
+|---|---|
+| Ciclo jurídico rodando e **aprendendo** | `FontePerfil` com 2 linhas: `esaj-al v2` (páginas 3→4, +5,18 pts) e `esaj-al v3` (timeout 12000→12250 ms, +7,28 pts), ambas com motivo e ε=3 registrados |
+| Perfil **usado na busca** | `/api/processos/nacional` e agora também `/api/processos/pesquisar` (nome/CPF) leem `perfisParaBusca` — teste `auto-aplicado.test.ts` prova o termo enviado ao e-SAJ mudando com a variante v4 |
+| Núcleo novo medindo **todos os módulos** | `ColetorEstado` 12 linhas, `ColetorMetrica` 50+, `ColetorAcao` 40, `SyncRun` 50+ (`esaj-ac 12 itens`, `djen 403`, `dou 502`) |
+| Operador consegue ver | aba **Fontes** no painel (`/admin.html`), sem erro de console, com ciclo sob demanda e reativação |
+| Auditar o que foi decidido | visor de BD do painel lista `fonteperfil`, `fontemetrica`, `coletoreestado`, `coletormetrica`, `coletoracao`, `syncrun` |
+
+Três bugs de painel encontrados nesta auditoria e corrigidos (todos existiam antes desta entrega):
+1. **`/v1/admin/auth/login` não devolvia `permissions`** → o painel abria em branco ao entrar
+   (`TypeError: Cannot read properties of undefined (reading 'join')`). Agora devolve e a tela tolera ausência.
+2. **visor de BD usava o nome da tabela** em vez do model do Prisma → `syncRun`,
+   `fontePerfil` e outras apareciam como “modelo indisponível”.
+3. **`id` BigInt estourava o JSON** do visor → 500 em toda tabela com id numérico.
+
+O que continua **fora** (declarado, não simulado): `buscaIA`/`sherlock` como coletores
+do NCA; módulos `anota`, `pagamentos` e `operacao` (não têm fonte externa para medir);
+e o modo IA do diagnóstico, que hoje roda determinístico porque o ambiente não tem
+`AI_PROVIDER`/`AI_API_KEY`.
